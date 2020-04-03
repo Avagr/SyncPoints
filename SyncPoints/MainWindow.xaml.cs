@@ -22,6 +22,7 @@ namespace SyncPoints
     {
         public MainWindow()
         {
+            Console.WriteLine("HI");
             InitializeComponent();
         }
     }
