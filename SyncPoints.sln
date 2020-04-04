@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29905.134
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncPoints", "SyncPoints\SyncPoints.csproj", "{E7B7BF44-7AC2-4895-BF48-FC2CFD50ADBE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynPointLib", "SynPointLib\SynPointLib.csproj", "{2F6EE336-8014-4CB9-909E-4ECB2577A295}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncPointsLib", "SyncPointsLib\SyncPointsLib.csproj", "{2F6EE336-8014-4CB9-909E-4ECB2577A295}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

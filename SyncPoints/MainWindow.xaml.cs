@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using QuickGraph.Data;
 using QuickGraph;
+using SyncPointsLib;
 using GraphSharp.Controls;
 
 namespace SyncPoints
@@ -33,6 +34,7 @@ namespace SyncPoints
         private void CreateGraphToVisualize()
         {
             var g = new BidirectionalGraph<object, IEdge<object>>();
+            var graph = new AdjacencyGraph<(int, int), IEdge<(int, int)>>();
 
             //add the vertices to the graph
             string[] vertices = new string[5];
@@ -50,7 +52,9 @@ namespace SyncPoints
             g.AddEdge(new Edge<object>(vertices[1], vertices[4]));
 
             GraphToVisualize = g;
-            graphLayout.GetEdgeControl
+            var tup = (3, 5);
+            tup.Item1 -= 3;
+            Console.WriteLine(tup.Item1 + " " + tup.Item2);
         }
     }
 }
