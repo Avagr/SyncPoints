@@ -118,5 +118,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SyncPointsLib\SyncPointsLib.csproj">
+      <Project>{2f6ee336-8014-4cb9-909e-4ecb2577a295}</Project>
+      <Name>SyncPointsLib</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

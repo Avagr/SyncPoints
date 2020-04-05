@@ -23,38 +23,37 @@ namespace SyncPoints
     public partial class MainWindow : Window
     {
         public IBidirectionalGraph<object, IEdge<object>> GraphToVisualize { get; set; }
+        //public AdjacencyGraph<object, IEdge<object>> GraphToVisualize { get; set; }
+        static Random rnd = new Random();
 
         public MainWindow()
         {
             this.DataContext = this;
             CreateGraphToVisualize();
             InitializeComponent();
+            
         }
 
         private void CreateGraphToVisualize()
         {
-            var g = new BidirectionalGraph<object, IEdge<object>>();
-            var graph = new AdjacencyGraph<(int, int), IEdge<(int, int)>>();
+            var graph = new BidirectionalGraph<object, IEdge<object>>();
 
-            //add the vertices to the graph
-            string[] vertices = new string[5];
-            for (int i = 0; i < 5; i++)
+            SyncVertex[] vert = new SyncVertex[30];
+            for (int i = 0; i < 30; i++)
             {
-                vertices[i] = i.ToString();
-                g.AddVertex(vertices[i]);
+                vert[i] = new SyncVertex(i, 1);
+                graph.AddVertex(vert[i]);
             }
-
-            //add some edges to the graph
-            g.AddEdge(new Edge<object>(vertices[0], vertices[1]));
-            g.AddEdge(new Edge<object>(vertices[1], vertices[2]));
-            g.AddEdge(new Edge<object>(vertices[2], vertices[3]));
-            g.AddEdge(new Edge<object>(vertices[3], vertices[1]));
-            g.AddEdge(new Edge<object>(vertices[1], vertices[4]));
-
-            GraphToVisualize = g;
-            var tup = (3, 5);
-            tup.Item1 -= 3;
-            Console.WriteLine(tup.Item1 + " " + tup.Item2);
+            int limit;
+            for (int i = 0; i < 30; i++)
+            {
+                limit = rnd.Next(1, 5);
+                for (int j = 0; j < limit; j++)
+                {
+                    graph.AddEdge(new Edge<object>(vert[i], vert[rnd.Next(30)]));
+                }
+            }
+            GraphToVisualize = graph;
         }
     }
 }

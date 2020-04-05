@@ -3,7 +3,7 @@
     /// <summary>
     /// Vertex that supports syncing
     /// </summary>
-    struct SyncVertex
+    public struct SyncVertex
     {
         /// <summary>
         /// ID of the vertex
