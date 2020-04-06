@@ -14,6 +14,8 @@ using QuickGraph.Data;
 using QuickGraph;
 using SyncPointsLib;
 using GraphSharp.Controls;
+using System.Windows.Shapes;
+using System.Windows.Media.Animation;
 
 namespace SyncPoints
 {
@@ -23,37 +25,89 @@ namespace SyncPoints
     public partial class MainWindow : Window
     {
         public IBidirectionalGraph<object, IEdge<object>> GraphToVisualize { get; set; }
-        //public AdjacencyGraph<object, IEdge<object>> GraphToVisualize { get; set; }
         static Random rnd = new Random();
 
         public MainWindow()
         {
             this.DataContext = this;
+            NameScope.SetNameScope(this, new NameScope());
             CreateGraphToVisualize();
             InitializeComponent();
-            
         }
 
         private void CreateGraphToVisualize()
         {
             var graph = new BidirectionalGraph<object, IEdge<object>>();
 
-            SyncVertex[] vert = new SyncVertex[30];
-            for (int i = 0; i < 30; i++)
+            SyncVertex[] vert = new SyncVertex[10];
+            for (int i = 0; i < 10; i++)
             {
                 vert[i] = new SyncVertex(i, 1);
                 graph.AddVertex(vert[i]);
             }
             int limit;
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 10; i++)
             {
                 limit = rnd.Next(1, 5);
                 for (int j = 0; j < limit; j++)
                 {
-                    graph.AddEdge(new Edge<object>(vert[i], vert[rnd.Next(30)]));
+                    graph.AddEdge(new WeightedEdge<object>(vert[i], vert[rnd.Next(10)], 3));
                 }
             }
             GraphToVisualize = graph;
+        }
+
+        private void TestDot_Click(object sender, RoutedEventArgs e)
+        {
+            var edge = (GraphToVisualize.OutEdge(GraphToVisualize.Vertices.ToList()[0], 0));
+            var edgeControl = graphLayout.GetEdgeControl(edge);
+            edgeControl.Foreground = Brushes.Red;
+            var edgePoints = GetPointsFromEdgeControl(edgeControl);
+            EllipseGeometry ellipse = new EllipseGeometry(edgePoints.Item1, 5, 5);
+            if (this.FindName("movingPoint") != null) this.UnregisterName("movingPoint");
+            this.RegisterName("movingPoint", ellipse);
+            Path pointPath = new Path();
+            pointPath.Data = ellipse;
+            pointPath.Fill = Brushes.Blue;
+            pointPath.Margin = new Thickness(15);
+
+            mainPanel.Children.Add(pointPath);
+
+            PathGeometry animationPath = new PathGeometry();
+            PathFigure fig = new PathFigure();
+            fig.StartPoint = edgePoints.Item1;
+            fig.Segments.Add(new LineSegment(edgePoints.Item2, false));
+            animationPath.Figures.Add(fig);
+
+            //animationPath.Freeze();
+
+            PointAnimationUsingPath anim = new PointAnimationUsingPath();
+            anim.PathGeometry = animationPath;
+            anim.Duration = TimeSpan.FromSeconds(5);
+            anim.RepeatBehavior = RepeatBehavior.Forever;
+
+            Storyboard.SetTargetName(anim, "movingPoint");
+            Storyboard.SetTargetProperty(anim,
+                new PropertyPath(EllipseGeometry.CenterProperty));
+
+            Storyboard pathAnimationStoryboard = new Storyboard();
+            pathAnimationStoryboard.RepeatBehavior = RepeatBehavior.Forever;
+            pathAnimationStoryboard.AutoReverse = true;
+            pathAnimationStoryboard.Children.Add(anim);
+
+            pointPath.Loaded += delegate (object send, RoutedEventArgs ee)
+            {
+                // Start the storyboard.
+                pathAnimationStoryboard.Begin(this);
+            };
+        }
+
+        public static (Point, Point) GetPointsFromEdgeControl(EdgeControl edge)
+        {
+
+            Point source = new Point(GraphLayout.GetX(edge.Source), GraphLayout.GetY(edge.Source));
+            Point target = new Point(GraphLayout.GetX(edge.Target), GraphLayout.GetY(edge.Target));
+            return (source, target);
         }
     }
 }

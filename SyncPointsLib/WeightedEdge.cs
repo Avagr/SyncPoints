@@ -1,12 +1,12 @@
 ﻿using QuickGraph;
 
-namespace SynPointLib
+namespace SyncPointsLib
 {
     /// <summary>
     /// Weighted directed edge
     /// </summary>
     /// <typeparam name="TVertex"> Type of vertex</typeparam>
-    class WeightedEdge<TVertex> : IEdge<TVertex>
+    public class WeightedEdge<TVertex> : IEdge<TVertex>
     {
         public WeightedEdge(TVertex source, TVertex target, int weight)
         {

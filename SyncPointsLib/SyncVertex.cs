@@ -11,7 +11,7 @@
         public int ID { get; }
 
         /// <summary>
-        /// The sync counter
+        /// Sync counter
         /// </summary>
         public int Sync { get; set; }
 

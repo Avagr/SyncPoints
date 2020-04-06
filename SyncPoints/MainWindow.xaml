@@ -9,13 +9,21 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <zoom:ZoomControl>
-            <graphsharp:GraphLayout x:Name="graphLayout"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="5*"/>
+        </Grid.RowDefinitions>
+        <zoom:ZoomControl Grid.Row="1">
+            <Canvas x:Name="mainPanel" Height="200" Width="200">
+                <graphsharp:GraphLayout x:Name="graphLayout" 
                                     Graph="{Binding GraphToVisualize}"
-                                    LayoutAlgorithmType="FR"
+                                    LayoutAlgorithmType="ISOM"
                                     OverlapRemovalAlgorithmType="FSA"
-                                    HighlightAlgorithmType="None"
+                                    HighlightAlgorithmType="Simple"
+                                    
                                     />
+            </Canvas>
         </zoom:ZoomControl>
+        <Button x:Name="TestDot" Click="TestDot_Click"/>
     </Grid>
 </Window>
