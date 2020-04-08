@@ -1,4 +1,4 @@
-﻿using QuickGraph;
+﻿using GraphX.PCL.Common.Models;
 
 namespace SyncPointsLib
 {
@@ -6,28 +6,15 @@ namespace SyncPointsLib
     /// Weighted directed edge
     /// </summary>
     /// <typeparam name="TVertex"> Type of vertex</typeparam>
-    public class WeightedEdge<TVertex> : IEdge<TVertex>
+    public class WeightedEdge : EdgeBase<SyncVertex>
     {
-        public WeightedEdge(TVertex source, TVertex target, int weight)
+        public WeightedEdge() : base(null, null, 1) { }
+
+        public WeightedEdge(SyncVertex source, SyncVertex target, double weight = 1) : base(source, target, weight) { }
+
+        public override string ToString()
         {
-            Source = source;
-            Target = target;
-            Weight = weight;
+            return Weight.ToString();
         }
-
-        /// <summary>
-        /// Source vertex
-        /// </summary>
-        public TVertex Source { get; }
-
-        /// <summary>
-        /// Target vertex
-        /// </summary>
-        public TVertex Target { get; }
-
-        /// <summary>
-        /// Weight of the edge
-        /// </summary>
-        public int Weight { get; }
     }
 }

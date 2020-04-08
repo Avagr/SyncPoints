@@ -4,26 +4,22 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SyncPoints"
-        xmlns:graphsharp="clr-namespace:GraphSharp.Controls;assembly=GraphSharp.Controls"
-        xmlns:zoom="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
+        xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib"
+        xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
+    <Window.Resources>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="5*"/>
+            <RowDefinition Height="0.5*"/>
         </Grid.RowDefinitions>
-        <zoom:ZoomControl Grid.Row="1">
-            <Canvas x:Name="mainPanel" Height="200" Width="200">
-                <graphsharp:GraphLayout x:Name="graphLayout" 
-                                    Graph="{Binding GraphToVisualize}"
-                                    LayoutAlgorithmType="ISOM"
-                                    OverlapRemovalAlgorithmType="FSA"
-                                    HighlightAlgorithmType="Simple"
-                                    
-                                    />
-            </Canvas>
-        </zoom:ZoomControl>
+        <graphxctrl:ZoomControl x:Name="gg_zoomctrl">
+            <locallib:MyGraphArea x:Name="gg_Area"/>
+        </graphxctrl:ZoomControl>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
+        <Button x:Name="TestVert" Click="TestVert_Click" Grid.Row="2"/>
     </Grid>
 </Window>
