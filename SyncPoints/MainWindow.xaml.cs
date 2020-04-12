@@ -5,6 +5,7 @@ using GraphX.PCL.Logic.Algorithms.OverlapRemoval;
 using QuickGraph;
 using SyncPointsLib;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -23,33 +24,45 @@ namespace SyncPoints
     /// </summary>
     public partial class MainWindow : Window
     {
-        public IBidirectionalGraph<object, IEdge<object>> GraphToVisualize { get; set; }
         static Random rnd = new Random();
         BidirectionalGraph<SyncVertex, WeightedEdge> graph;
-        Storyboard pathAnimationStoryboard;
+
+        Dictionary<SyncVertex, List<DotAnimation>> vertexStoryboards;
+
+        WeightedEdge StartingEdge { get; }
+
+        int animCount;
 
         public MainWindow()
         {
             this.DataContext = this;
+            vertexStoryboards = new Dictionary<SyncVertex, List<DotAnimation>>();
             InitializeComponent();
-            //gg_Area.SetVerticesMathShape(VertexShape.Triangle);
-            Random Rand = new Random();
+            CreateGraph();
+            StartingEdge = graph.Edges.ToList()[rnd.Next(graph.Edges.Count())];
+            gg_Area.EdgesList[StartingEdge].Foreground = Brushes.Red;
+            animCount = 0;
+        }
 
+        private void CreateGraph()
+        {
             //Create data graph object
             graph = new MyGraph();
 
-            //Create and add vertices using some DataSource for ID's
+            //Create and add vertices
             for (int i = 0; i < 30; i++)
             {
-                graph.AddVertex(new SyncVertex(i, 5));
+                graph.AddVertex(new SyncVertex(i, 1));
             }
 
             var vlist = graph.Vertices.ToList();
             //Generate random edges for the vertices
-            foreach (var item in vlist)
+            foreach (var item1 in vlist)
             {
-                var vertex2 = vlist[Rand.Next(0, graph.VertexCount - 1)];
-                graph.AddEdge(new WeightedEdge(item, vertex2, 5));
+                foreach (var item2 in vlist)
+                {
+                    if (item1 != item2 && rnd.Next(0, 10) < 1) graph.AddEdge(new WeightedEdge(item1, item2, rnd.Next(1,4)));
+                }
             }
             GenerateLogicCore();
             gg_Area.GenerateGraph(graph, true, true);
@@ -92,51 +105,90 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            var edge = gg_Area.EdgesList[graph.Edges.ToList<WeightedEdge>()[0]];
-            Path pointPath = AnimateEdge(edge);
-
-            pointPath.Loaded += delegate (object send, RoutedEventArgs ee)
+            AnimateEdge(StartingEdge);
+            if (!mainPanel.Children.Contains(vertexStoryboards[StartingEdge.Source][0].Path)) mainPanel.Children.Add(vertexStoryboards[StartingEdge.Source][0].Path);
+            gg_zoomctrl.BeginStoryboard(vertexStoryboards[StartingEdge.Source][0].Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+            foreach (var edge in graph.OutEdges(StartingEdge.Source))
             {
-                // Start the storyboard.
-                pathAnimationStoryboard.Begin(this);
-            };
-
+                AnimateEdge(edge);
+            }
+            PreAnimateOutEdges(StartingEdge.Target);
+            PreAnimateOutEdges(StartingEdge.Source);
+            //var edge = gg_Area.EdgesList[graph.Edges.ToList<WeightedEdge>()[0]];
+            //animationList.Enqueue(AnimateEdge(edge));
+            //gg_zoomctrl.BeginStoryboard(animationList.Dequeue());
+            //foreach (var item in graph.OutEdges((SyncVertex)edge.Target.Vertex))
+            //{
+            //    animationList.Enqueue(AnimateEdge(gg_Area.EdgesList[item]));
+            //}
             //gg_zoomctrl.BeginStoryboard(pathAnimationStoryboard);
         }
 
-        private Path AnimateEdge(EdgeControl edge)
+        private void AnimateEdge(WeightedEdge edge)
         {
-            edge.ManualDrawing = true;
-            var edgepath = edge.GetEdgePathManually();
-            edge.Foreground = Brushes.Red;
-            EllipseGeometry ellipse = new EllipseGeometry(new Point(0, 0), 7, 7);
-            if (this.FindName("movingPoint") != null) this.UnregisterName("movingPoint");
-            this.RegisterName("movingPoint", ellipse);
-            Path pointPath = new Path();
-            pointPath.Data = ellipse;
-            pointPath.Fill = Brushes.Blue;
+            EdgeControl edgeControl = gg_Area.EdgesList[edge];
+            edgeControl.ManualDrawing = true;
+            EllipseGeometry dot = new EllipseGeometry(new Point(0, 0), 7.5, 7.5);
+            animCount++;
+            Console.WriteLine(animCount);
+            string dotName = "dot" + animCount;
+            this.RegisterName(dotName, dot);
+            Path dotPath = new Path();
+            dotPath.Data = dot;
+            dotPath.Fill = Brushes.Blue;
 
-            mainPanel.Children.Add(pointPath);
+            PathGeometry animPath = edgeControl.GetEdgePathManually();
+            animPath.Freeze();
 
-            PathGeometry animationPath = edgepath;
+            PointAnimationUsingPath animation = new PointAnimationUsingPath();
+            animation.PathGeometry = animPath;
+            animation.Duration = TimeSpan.FromSeconds(edge.Weight);
+            animation.RepeatBehavior = new RepeatBehavior(1);
+            Storyboard.SetTargetName(animation, dotName);
+            Storyboard.SetTargetProperty(animation, new PropertyPath(EllipseGeometry.CenterProperty));
 
-            PointAnimationUsingPath anim = new PointAnimationUsingPath();
-            anim.PathGeometry = animationPath;
-            anim.Duration = TimeSpan.FromSeconds(5);
-            anim.RepeatBehavior = new RepeatBehavior(1);
+            Storyboard animStoryboard = new Storyboard();
+            animStoryboard.Children.Add(animation);
+            animStoryboard.RepeatBehavior = new RepeatBehavior(1);
 
-            Storyboard.SetTargetName(anim, "movingPoint");
-            Storyboard.SetTargetProperty(anim, new PropertyPath(EllipseGeometry.CenterProperty));
-
-            pathAnimationStoryboard = new Storyboard();
-            pathAnimationStoryboard.RepeatBehavior = new RepeatBehavior(1);
-            pathAnimationStoryboard.Children.Add(anim);
-
-            pathAnimationStoryboard.Completed += (object e, EventArgs args) =>
+            animStoryboard.Completed += (object e, EventArgs args) =>
             {
-                mainPanel.Children.Remove(pointPath);
+                mainPanel.Children.Remove(dotPath);
+                edge.Target.Sync--;
+                if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
+                {
+                    foreach (var outEdge in vertexStoryboards[edge.Target])
+                    {
+                        if (!mainPanel.Children.Contains(outEdge.Path)) mainPanel.Children.Add(outEdge.Path);
+                        gg_zoomctrl.BeginStoryboard(outEdge.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        PreAnimateOutEdges(outEdge.Edge.Target);
+                        PreAnimateOutEdges(outEdge.Edge.Source);
+                    }
+                    edge.Target.ResetSync();
+                }
             };
-            return pointPath;
+
+            if (!vertexStoryboards.ContainsKey(edge.Source)) vertexStoryboards[edge.Source] = new List<DotAnimation>();
+            vertexStoryboards[edge.Source].Add(new DotAnimation(animStoryboard, dotPath, edge));
+        }
+
+        /// <summary>
+        /// Prepares animations for all edges coming from a specified vertex
+        /// </summary>
+        /// <param name="vert"> The vertex to get edges from</param>
+        private void PreAnimateOutEdges(SyncVertex vertex)
+        {
+            foreach (var outEdge in graph.OutEdges(vertex))
+            {
+                var vert = outEdge.Target;
+                if (!vertexStoryboards.ContainsKey(vert))
+                {
+                    foreach (var edge in graph.OutEdges(vert))
+                    {
+                        AnimateEdge(edge);
+                    }
+                }
+            }
         }
 
         ///// <summary>
@@ -156,7 +208,7 @@ namespace SyncPoints
         {
             foreach (var item in graph.Vertices)
             {
-                item.Sync = 77;
+                item.Sync = 1;
             }
         }
     }

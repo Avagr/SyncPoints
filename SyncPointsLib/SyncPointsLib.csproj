@@ -67,6 +67,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DotAnimation.cs" />
     <Compile Include="MyGraphArea.cs" />
     <Compile Include="MyGraph.cs" />
     <Compile Include="MyGXLogicCore.cs" />

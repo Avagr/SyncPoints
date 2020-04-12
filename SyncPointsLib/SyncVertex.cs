@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using GraphX.PCL.Common.Models;
+using System;
 
 namespace SyncPointsLib
 {
@@ -30,6 +31,7 @@ namespace SyncPointsLib
 
         public SyncVertex(int id, int sync)
         {
+            if (sync < 1) throw new ArgumentException("Sync counter cannot be less than 1");
             ID = id;
             initSync = sync;
             Sync = sync;
