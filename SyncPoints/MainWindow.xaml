@@ -9,32 +9,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Window.Resources>
-        <Style TargetType="graphxctrl:VertexControl">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="graphxctrl:VertexControl">
-                        <Border Background="OrangeRed" 
-                            BorderBrush="{TemplateBinding BorderBrush}"
-							CornerRadius="10,10,10,10"
-						    Padding="{TemplateBinding Padding}">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="Common">
-                                    <VisualState x:Name="Snapped">
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            </Grid>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style TargetType="graphxctrl:ViewFinderDisplay">
+            <Setter Property="Opacity" Value="0"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -44,11 +20,11 @@
             <RowDefinition Height="0.5*"/>
         </Grid.RowDefinitions>
         <graphxctrl:ZoomControl x:Name="gg_zoomctrl" Grid.Row="1">
-            <Canvas x:Name="mainPanel">
+            <Canvas x:Name="mainPanel" IsHitTestVisible="False">
                 <locallib:MyGraphArea x:Name="gg_Area"/>
             </Canvas>
         </graphxctrl:ZoomControl>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
-        <Button x:Name="TestVert" Click="TestVert_Click" Grid.Row="2"/>
+        <Button x:Name="TestVert" Click="TestVert_Click_1" Grid.Row="2"/>
     </Grid>
 </Window>

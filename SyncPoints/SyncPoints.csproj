@@ -47,6 +47,9 @@
       <HintPath>..\packages\GraphX.2.3.6.0\lib\net40-client\GraphX.WPF.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="PanAndZoom, Version=2.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PanAndZoom.2.3.3\lib\net461\PanAndZoom.dll</HintPath>
+    </Reference>
     <Reference Include="QuickGraph, Version=3.6.61114.0, Culture=neutral, PublicKeyToken=f3fb40175eec2af3, processorArchitecture=MSIL">
       <HintPath>..\packages\QuickGraphPCL.3.6.61114.2\lib\net40-client\QuickGraph.dll</HintPath>
     </Reference>
@@ -73,6 +76,12 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="Wpf.Controls.PanAndZoom, Version=2.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Wpf.Controls.PanAndZoom.2.3.3\lib\net461\Wpf.Controls.PanAndZoom.dll</HintPath>
+    </Reference>
+    <Reference Include="Wpf.MatrixExtensions, Version=2.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Wpf.MatrixExtensions.2.3.3\lib\net461\Wpf.MatrixExtensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

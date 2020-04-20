@@ -8,11 +8,10 @@ namespace SyncPointsLib
     /// </summary>
     public class DotAnimation
     {
-        public DotAnimation(Storyboard storyboard, Path path, WeightedEdge edge)
+        public DotAnimation(Storyboard storyboard, Path path)
         {
             Storyboard = storyboard;
             Path = path;
-            Edge = edge;
         }
 
         /// <summary>
@@ -25,9 +24,5 @@ namespace SyncPointsLib
         /// </summary>
         public Path Path { get; }
 
-        /// <summary>
-        /// The Edge object that is animated
-        /// </summary>
-        public WeightedEdge Edge { get; }
     }
 }

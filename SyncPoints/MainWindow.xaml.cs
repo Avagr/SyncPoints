@@ -27,21 +27,26 @@ namespace SyncPoints
         static Random rnd = new Random();
         BidirectionalGraph<SyncVertex, WeightedEdge> graph;
 
-        Dictionary<SyncVertex, List<DotAnimation>> vertexStoryboards;
+        List<Storyboard> ActiveStoryboards { get; set; }
 
-        WeightedEdge StartingEdge { get; }
+        List<WeightedEdge> StartingEdges { get; set; }
 
-        int animCount;
+        int animCount, dotCount;
 
         public MainWindow()
         {
+            //NameScope.SetNameScope(this, new NameScope());
             this.DataContext = this;
-            vertexStoryboards = new Dictionary<SyncVertex, List<DotAnimation>>();
             InitializeComponent();
             CreateGraph();
-            StartingEdge = graph.Edges.ToList()[rnd.Next(graph.Edges.Count())];
-            gg_Area.EdgesList[StartingEdge].Foreground = Brushes.Red;
-            animCount = 0;
+            ZoomControl.SetViewFinderVisibility(gg_zoomctrl, Visibility.Collapsed);
+            StartingEdges = new List<WeightedEdge>();
+            ActiveStoryboards = new List<Storyboard>();
+            foreach (var edge in gg_Area.EdgesList.Keys)
+            {
+                if (rnd.Next(2) != 0) StartingEdges.Add(edge);
+            }
+            animCount = dotCount = 0;
         }
 
         private void CreateGraph()
@@ -52,7 +57,7 @@ namespace SyncPoints
             //Create and add vertices
             for (int i = 0; i < 30; i++)
             {
-                graph.AddVertex(new SyncVertex(i, 1));
+                graph.AddVertex(new SyncVertex(i, rnd.Next(5, 8)));
             }
 
             var vlist = graph.Vertices.ToList();
@@ -61,7 +66,7 @@ namespace SyncPoints
             {
                 foreach (var item2 in vlist)
                 {
-                    if (item1 != item2 && rnd.Next(0, 10) < 1) graph.AddEdge(new WeightedEdge(item1, item2, rnd.Next(1,4)));
+                    if (item1 != item2 && rnd.Next(0, 5) < 1) graph.AddEdge(new WeightedEdge(item1, item2, rnd.NextDouble() * 8 + 1));
                 }
             }
             GenerateLogicCore();
@@ -79,7 +84,7 @@ namespace SyncPoints
             LogicCore.DefaultLayoutAlgorithmParams =
                                LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.KK);
             //Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
-            ((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
+            ((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 1000;
 
             //This property sets vertex overlap removal algorithm.
             //Such algorithms help to arrange vertices in the layout so no one overlaps each other.
@@ -105,33 +110,31 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            AnimateEdge(StartingEdge);
-            if (!mainPanel.Children.Contains(vertexStoryboards[StartingEdge.Source][0].Path)) mainPanel.Children.Add(vertexStoryboards[StartingEdge.Source][0].Path);
-            gg_zoomctrl.BeginStoryboard(vertexStoryboards[StartingEdge.Source][0].Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-            foreach (var edge in graph.OutEdges(StartingEdge.Source))
+            DotAnimation anim;
+            foreach (var edge in StartingEdges)
             {
-                AnimateEdge(edge);
+                anim = AnimateEdge(edge);
+                if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                gg_zoomctrl.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                ActiveStoryboards.Add(anim.Storyboard);
             }
-            PreAnimateOutEdges(StartingEdge.Target);
-            PreAnimateOutEdges(StartingEdge.Source);
-            //var edge = gg_Area.EdgesList[graph.Edges.ToList<WeightedEdge>()[0]];
-            //animationList.Enqueue(AnimateEdge(edge));
-            //gg_zoomctrl.BeginStoryboard(animationList.Dequeue());
-            //foreach (var item in graph.OutEdges((SyncVertex)edge.Target.Vertex))
-            //{
-            //    animationList.Enqueue(AnimateEdge(gg_Area.EdgesList[item]));
-            //}
-            //gg_zoomctrl.BeginStoryboard(pathAnimationStoryboard);
         }
 
-        private void AnimateEdge(WeightedEdge edge)
+        /// <summary>
+        /// Animates a single edge of the graph
+        /// </summary>
+        /// <param name="edge"> Edge to animate</param>
+        /// <returns> A DotAnimation class that contains the Path and Storyboard of an animation</returns>
+        private DotAnimation AnimateEdge(WeightedEdge edge)
         {
             EdgeControl edgeControl = gg_Area.EdgesList[edge];
             edgeControl.ManualDrawing = true;
             EllipseGeometry dot = new EllipseGeometry(new Point(0, 0), 7.5, 7.5);
             animCount++;
-            Console.WriteLine(animCount);
-            string dotName = "dot" + animCount;
+            dotCount++;
+            if (dotCount > 2000) Environment.Exit(1);
+            //Console.WriteLine(dotCount);
+            string dotName = "dot" + animCount; // Naming the object with a unique ID
             this.RegisterName(dotName, dot);
             Path dotPath = new Path();
             dotPath.Data = dot;
@@ -143,73 +146,48 @@ namespace SyncPoints
             PointAnimationUsingPath animation = new PointAnimationUsingPath();
             animation.PathGeometry = animPath;
             animation.Duration = TimeSpan.FromSeconds(edge.Weight);
-            animation.RepeatBehavior = new RepeatBehavior(1);
+            animation.RepeatBehavior = new RepeatBehavior(1); // Repeats once
             Storyboard.SetTargetName(animation, dotName);
-            Storyboard.SetTargetProperty(animation, new PropertyPath(EllipseGeometry.CenterProperty));
+            Storyboard.SetTargetProperty(animation, new PropertyPath(EllipseGeometry.CenterProperty)); // Animating the center of the dot
 
             Storyboard animStoryboard = new Storyboard();
             animStoryboard.Children.Add(animation);
-            animStoryboard.RepeatBehavior = new RepeatBehavior(1);
+            this.RegisterName(dotName + "Storyboard", animStoryboard);
+            animStoryboard.RepeatBehavior = new RepeatBehavior(1); // Repeats one
 
             animStoryboard.Completed += (object e, EventArgs args) =>
             {
                 mainPanel.Children.Remove(dotPath);
+                dotCount--;
                 edge.Target.Sync--;
+                ActiveStoryboards.Remove(animStoryboard);
                 if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
                 {
-                    foreach (var outEdge in vertexStoryboards[edge.Target])
+                    foreach (var outEdge in graph.OutEdges(edge.Target))
                     {
-                        if (!mainPanel.Children.Contains(outEdge.Path)) mainPanel.Children.Add(outEdge.Path);
-                        gg_zoomctrl.BeginStoryboard(outEdge.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                        PreAnimateOutEdges(outEdge.Edge.Target);
-                        PreAnimateOutEdges(outEdge.Edge.Source);
+                        DotAnimation anim = AnimateEdge(outEdge);
+                        if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                        gg_zoomctrl.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        ActiveStoryboards.Add(anim.Storyboard);
                     }
                     edge.Target.ResetSync();
                 }
             };
 
-            if (!vertexStoryboards.ContainsKey(edge.Source)) vertexStoryboards[edge.Source] = new List<DotAnimation>();
-            vertexStoryboards[edge.Source].Add(new DotAnimation(animStoryboard, dotPath, edge));
+            return (new DotAnimation(animStoryboard, dotPath));
         }
 
-        /// <summary>
-        /// Prepares animations for all edges coming from a specified vertex
-        /// </summary>
-        /// <param name="vert"> The vertex to get edges from</param>
-        private void PreAnimateOutEdges(SyncVertex vertex)
+        private void TestVert_Click_1(object sender, RoutedEventArgs e)
         {
-            foreach (var outEdge in graph.OutEdges(vertex))
+            Console.WriteLine(ActiveStoryboards.Count);
+            foreach (var story in ActiveStoryboards)
             {
-                var vert = outEdge.Target;
-                if (!vertexStoryboards.ContainsKey(vert))
-                {
-                    foreach (var edge in graph.OutEdges(vert))
-                    {
-                        AnimateEdge(edge);
-                    }
-                }
+                story.SetSpeedRatio(gg_zoomctrl, 5);
             }
         }
-
-        ///// <summary>
-        ///// Gets source and target Point objects from an EdgeControl
-        ///// </summary>
-        ///// <param name="edge"> EdgeControl</param>
-        ///// <returns> Tuple of (SourcePoint, TargetPoint) </returns>
-        //public static (Point, Point) GetPointsFromEdgeControl(EdgeControl edge)
-        //{
-
-        //    Point source = new Point(GraphLayout.GetX(edge.Source), GraphLayout.GetY(edge.Source));
-        //    Point target = new Point(GraphLayout.GetX(edge.Target), GraphLayout.GetY(edge.Target));
-        //    return (source, target);
-        //}
 
         private void TestVert_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in graph.Vertices)
-            {
-                item.Sync = 1;
-            }
         }
     }
 }

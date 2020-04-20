@@ -2,8 +2,37 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SyncPoints"
+             xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
+             xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <Style TargetType="graphxctrl:VertexControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="graphxctrl:VertexControl">
+                        <Border Background="OrangeRed" 
+                            BorderBrush="{TemplateBinding BorderBrush}"
+							CornerRadius="10,10,10,10"
+						    Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="Common">
+                                    <VisualState x:Name="Snapped">
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+       
     </Application.Resources>
 </Application>
