@@ -4,35 +4,42 @@
              xmlns:local="clr-namespace:SyncPoints"
              xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
              xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
-             StartupUri="MainWindow.xaml">
+             StartupUri="MainWindow.xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019">
     <Application.Resources>
-        <Style TargetType="graphxctrl:VertexControl">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="graphxctrl:VertexControl">
-                        <Border Background="OrangeRed" 
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources />
+                <ui:XamlControlsResources />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <Style TargetType="graphxctrl:VertexControl">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="graphxctrl:VertexControl">
+                            <Border Background="OrangeRed" 
                             BorderBrush="{TemplateBinding BorderBrush}"
 							CornerRadius="10,10,10,10"
 						    Padding="{TemplateBinding Padding}">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="Common">
-                                    <VisualState x:Name="Snapped">
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="Common">
+                                        <VisualState x:Name="Snapped">
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
 
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            </Grid>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-       
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </Grid>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

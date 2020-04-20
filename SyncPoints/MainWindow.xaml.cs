@@ -2,6 +2,7 @@
 using GraphX.PCL.Common.Enums;
 using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.PCL.Logic.Algorithms.OverlapRemoval;
+using ModernWpf.Controls.Primitives;
 using QuickGraph;
 using SyncPointsLib;
 using System;
@@ -39,10 +40,10 @@ namespace SyncPoints
             this.DataContext = this;
             InitializeComponent();
             CreateGraph();
-            ZoomControl.SetViewFinderVisibility(gg_zoomctrl, Visibility.Collapsed);
+            ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             StartingEdges = new List<WeightedEdge>();
             ActiveStoryboards = new List<Storyboard>();
-            foreach (var edge in gg_Area.EdgesList.Keys)
+            foreach (var edge in graphArea.EdgesList.Keys)
             {
                 if (rnd.Next(2) != 0) StartingEdges.Add(edge);
             }
@@ -70,7 +71,7 @@ namespace SyncPoints
                 }
             }
             GenerateLogicCore();
-            gg_Area.GenerateGraph(graph, true, true);
+            graphArea.GenerateGraph(graph, true, true);
         }
 
         private void GenerateLogicCore()
@@ -105,7 +106,7 @@ namespace SyncPoints
             LogicCore.AsyncAlgorithmCompute = false;
 
             //Finally assign logic core to GraphArea object
-            gg_Area.LogicCore = LogicCore;
+            graphArea.LogicCore = LogicCore;
         }
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
@@ -115,7 +116,7 @@ namespace SyncPoints
             {
                 anim = AnimateEdge(edge);
                 if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                gg_zoomctrl.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
                 ActiveStoryboards.Add(anim.Storyboard);
             }
         }
@@ -127,7 +128,7 @@ namespace SyncPoints
         /// <returns> A DotAnimation class that contains the Path and Storyboard of an animation</returns>
         private DotAnimation AnimateEdge(WeightedEdge edge)
         {
-            EdgeControl edgeControl = gg_Area.EdgesList[edge];
+            EdgeControl edgeControl = graphArea.EdgesList[edge];
             edgeControl.ManualDrawing = true;
             EllipseGeometry dot = new EllipseGeometry(new Point(0, 0), 7.5, 7.5);
             animCount++;
@@ -167,7 +168,7 @@ namespace SyncPoints
                     {
                         DotAnimation anim = AnimateEdge(outEdge);
                         if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                        gg_zoomctrl.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
                         ActiveStoryboards.Add(anim.Storyboard);
                     }
                     edge.Target.ResetSync();
@@ -182,7 +183,7 @@ namespace SyncPoints
             Console.WriteLine(ActiveStoryboards.Count);
             foreach (var story in ActiveStoryboards)
             {
-                story.SetSpeedRatio(gg_zoomctrl, 5);
+                story.SetSpeedRatio(zoomcontrol, 5);
             }
         }
 

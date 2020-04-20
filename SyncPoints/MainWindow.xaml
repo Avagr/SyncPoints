@@ -7,10 +7,12 @@
         xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib"
         xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="MainWindow" Height="650" Width="1200" WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Style TargetType="graphxctrl:ViewFinderDisplay">
-            <Setter Property="Opacity" Value="0"/>
+        <Style TargetType="Slider">
+            <Setter Property="Background" Value="Transparent"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -19,11 +21,12 @@
             <RowDefinition Height="5*"/>
             <RowDefinition Height="0.5*"/>
         </Grid.RowDefinitions>
-        <graphxctrl:ZoomControl x:Name="gg_zoomctrl" Grid.Row="1">
-            <Canvas x:Name="mainPanel" IsHitTestVisible="False">
-                <locallib:MyGraphArea x:Name="gg_Area"/>
+        <graphxctrl:ZoomControl x:Name="zoomcontrol" Grid.Row="1" MaxZoom="2.5" MinZoom="0.2">
+            <Canvas x:Name="mainPanel" IsHitTestVisible="False" Height="1000" Width="1000">
+                <locallib:MyGraphArea x:Name="graphArea"/>
             </Canvas>
         </graphxctrl:ZoomControl>
+        <ui:SplitView></ui:SplitView>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
         <Button x:Name="TestVert" Click="TestVert_Click_1" Grid.Row="2"/>
     </Grid>
