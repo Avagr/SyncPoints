@@ -11,23 +11,58 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="MainWindow" Height="650" Width="1200" WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Style TargetType="Slider">
-            <Setter Property="Background" Value="Transparent"/>
+        <Style TargetType="graphxctrl:ZoomControl" x:Key="zoomSlider">
+            <Style.Resources>
+                <Style TargetType="Slider" >
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+            </Style.Resources>
         </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="5*"/>
-            <RowDefinition Height="0.5*"/>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="10"/>
         </Grid.RowDefinitions>
-        <graphxctrl:ZoomControl x:Name="zoomcontrol" Grid.Row="1" MaxZoom="2.5" MinZoom="0.2">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="7*"/>
+            <ColumnDefinition Width="13*"/>
+            <ColumnDefinition Width="10"/>
+        </Grid.ColumnDefinitions>
+        <graphxctrl:ZoomControl x:Name="zoomcontrol" Grid.Row="1" Grid.Column="2" BorderThickness="2" BorderBrush="RoyalBlue"
+                                MaxZoom="2.5" MinZoom="0.2" Style="{StaticResource zoomSlider}">
             <Canvas x:Name="mainPanel" IsHitTestVisible="False" Height="1000" Width="1000">
                 <locallib:MyGraphArea x:Name="graphArea"/>
             </Canvas>
         </graphxctrl:ZoomControl>
-        <ui:SplitView></ui:SplitView>
+        <StackPanel Orientation="Horizontal" Grid.Column="2" HorizontalAlignment="Center">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type Slider}">
+                    <Setter Property="Margin" Value="0,100,0,0"/>
+                </Style>
+            </StackPanel.Resources>
+            <Button x:Name="resumeButton" Click="resumeButton_Click"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
+                    VerticalAlignment="Stretch" Margin="5">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-6"
+                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
+                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                </Grid>
+            </Button>
+            <Button x:Name="pauseButton" Click="pauseButton_Click"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
+                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
+                    <Path Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                </Grid>
+                </Button>
+            <StackPanel>
+                <TextBlock HorizontalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="RoyalBlue" FontFamily="Yu Gothic UI" Text="{Binding AnimationSpeedText}" />
+                <Slider x:Name="speedSlider" VerticalAlignment="Center" Width="150" Style="{StaticResource DefaultSliderStyle}" TickPlacement="Both"
+                         Minimum="-5" Maximum="5" ValueChanged="speedSlider_ValueChanged" Value="{Binding AnimationSpeed}" IsMoveToPointEnabled="True"/>
+            </StackPanel>
+        </StackPanel>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
-        <Button x:Name="TestVert" Click="TestVert_Click_1" Grid.Row="2"/>
     </Grid>
 </Window>

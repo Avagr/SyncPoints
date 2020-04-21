@@ -7,6 +7,7 @@ using QuickGraph;
 using SyncPointsLib;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -23,16 +24,40 @@ namespace SyncPoints
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private const double ExpConst = 0.321888; // A constant for speed transformations
         static Random rnd = new Random();
+
         BidirectionalGraph<SyncVertex, WeightedEdge> graph;
 
         List<Storyboard> ActiveStoryboards { get; set; }
 
+        List<DotAnimation> QueuedAnimations { get; set; }
+
         List<WeightedEdge> StartingEdges { get; set; }
 
         int animCount, dotCount;
+
+        bool isPaused = false;
+
+        public double AnimationSpeed { get; set; }
+
+        public string AnimationSpeedText
+        {
+            get
+            {
+                return "Speed: " + Math.Round(Math.Exp(ExpConst * AnimationSpeed), 3) + "x";
+            }
+        }
+
+        protected virtual void OnPropertyChanged(string propertyName = null)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public MainWindow()
         {
@@ -43,6 +68,8 @@ namespace SyncPoints
             ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             StartingEdges = new List<WeightedEdge>();
             ActiveStoryboards = new List<Storyboard>();
+            QueuedAnimations = new List<DotAnimation>();
+            AnimationSpeed = 0;
             foreach (var edge in graphArea.EdgesList.Keys)
             {
                 if (rnd.Next(2) != 0) StartingEdges.Add(edge);
@@ -77,35 +104,17 @@ namespace SyncPoints
         private void GenerateLogicCore()
         {
             var LogicCore = new MyGXLogicCore();
-            //This property sets layout algorithm that will be used to calculate vertices positions
-            //Different algorithms uses different values and some of them uses edge Weight property.
             LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
-            //Now we can set optional parameters using AlgorithmFactory
-            //NOTE: default parameters can be automatically created each time you change Default algorithms
             LogicCore.DefaultLayoutAlgorithmParams =
                                LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.KK);
-            //Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
             ((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 1000;
-
-            //This property sets vertex overlap removal algorithm.
-            //Such algorithms help to arrange vertices in the layout so no one overlaps each other.
             LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
-            //Setup optional params
             LogicCore.DefaultOverlapRemovalAlgorithmParams =
                               LogicCore.AlgorithmFactory.CreateOverlapRemovalParameters(OverlapRemovalAlgorithmTypeEnum.FSA);
             ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).HorizontalGap = 50;
             ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).VerticalGap = 50;
-
-            //This property sets edge routing algorithm that is used to build route paths according to algorithm logic.
-            //For ex., SimpleER algorithm will try to set edge paths around vertices so no edge will intersect any vertex.
             LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
-
-            //This property sets async algorithms computation so methods like: Area.RelayoutGraph() and Area.GenerateGraph()
-            //will run async with the UI thread. Completion of the specified methods can be catched by corresponding events:
-            //Area.RelayoutFinished and Area.GenerateGraphFinished.
             LogicCore.AsyncAlgorithmCompute = false;
-
-            //Finally assign logic core to GraphArea object
             graphArea.LogicCore = LogicCore;
         }
 
@@ -146,7 +155,7 @@ namespace SyncPoints
 
             PointAnimationUsingPath animation = new PointAnimationUsingPath();
             animation.PathGeometry = animPath;
-            animation.Duration = TimeSpan.FromSeconds(edge.Weight);
+            animation.Duration = TimeSpan.FromSeconds(edge.Weight * 0.5);
             animation.RepeatBehavior = new RepeatBehavior(1); // Repeats once
             Storyboard.SetTargetName(animation, dotName);
             Storyboard.SetTargetProperty(animation, new PropertyPath(EllipseGeometry.CenterProperty)); // Animating the center of the dot
@@ -164,13 +173,18 @@ namespace SyncPoints
                 ActiveStoryboards.Remove(animStoryboard);
                 if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
                 {
-                    foreach (var outEdge in graph.OutEdges(edge.Target))
+                    if (!isPaused)
                     {
-                        DotAnimation anim = AnimateEdge(outEdge);
-                        if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                        zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                        ActiveStoryboards.Add(anim.Storyboard);
+                        foreach (var outEdge in graph.OutEdges(edge.Target))
+                        {
+                            DotAnimation anim = AnimateEdge(outEdge);
+                            if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                            ActiveStoryboards.Add(anim.Storyboard);
+                            zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                            anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                        }
                     }
+                    else foreach (var outEdge in graph.OutEdges(edge.Target)) QueuedAnimations.Add(AnimateEdge(edge));
                     edge.Target.ResetSync();
                 }
             };
@@ -178,17 +192,45 @@ namespace SyncPoints
             return (new DotAnimation(animStoryboard, dotPath));
         }
 
-        private void TestVert_Click_1(object sender, RoutedEventArgs e)
+        private void resumeButton_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine(ActiveStoryboards.Count);
-            foreach (var story in ActiveStoryboards)
+            if (isPaused)
             {
-                story.SetSpeedRatio(zoomcontrol, 5);
+                foreach (var anim in QueuedAnimations)
+                {
+                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                    ActiveStoryboards.Add(anim.Storyboard);
+                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                }
+                isPaused = false;
+                foreach (var story in ActiveStoryboards)
+                {
+                    story.Resume(zoomcontrol);
+                }
             }
         }
 
-        private void TestVert_Click(object sender, RoutedEventArgs e)
+        private void speedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            OnPropertyChanged("AnimationSpeedText");
+            foreach (var story in ActiveStoryboards)
+            {
+                Console.WriteLine(story.SpeedRatio);
+                story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                Console.WriteLine(story.SpeedRatio + "NEW");
+            }
+        }
+
+        private void pauseButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isPaused)
+            {
+                isPaused = true;
+                foreach (var story in ActiveStoryboards)
+                {
+                    story.Pause(zoomcontrol);
+                }
+            }
         }
     }
 }

@@ -11,8 +11,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />
+                <ResourceDictionary x:Name="IconsDictionary" Source="pack://application:,,,/SyncPoints;component/Drawings/IconDictionary.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            
+
             <Style TargetType="graphxctrl:VertexControl">
                 <Setter Property="Template">
                     <Setter.Value>
