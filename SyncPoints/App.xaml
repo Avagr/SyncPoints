@@ -13,14 +13,13 @@
                 <ui:XamlControlsResources />
                 <ResourceDictionary x:Name="IconsDictionary" Source="pack://application:,,,/SyncPoints;component/Drawings/IconDictionary.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
             <Style TargetType="graphxctrl:VertexControl">
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="graphxctrl:VertexControl">
                             <Border Background="OrangeRed" 
                             BorderBrush="{TemplateBinding BorderBrush}"
-							CornerRadius="10,10,10,10"
+							CornerRadius="10,10,10,10" MinWidth="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
 						    Padding="{TemplateBinding Padding}">
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="Common">
@@ -34,13 +33,14 @@
                                         <RowDefinition/>
                                         <RowDefinition/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <TextBlock FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White" Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 </Grid>
                             </Border>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
+            
         </ResourceDictionary>
     </Application.Resources>
 </Application>

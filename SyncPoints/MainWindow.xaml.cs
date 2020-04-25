@@ -2,6 +2,8 @@
 using GraphX.PCL.Common.Enums;
 using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.PCL.Logic.Algorithms.OverlapRemoval;
+using ModernWpf;
+using System.Windows.Controls;
 using ModernWpf.Controls.Primitives;
 using QuickGraph;
 using SyncPointsLib;
@@ -33,72 +35,54 @@ namespace SyncPoints
 
         BidirectionalGraph<SyncVertex, WeightedEdge> graph;
 
-        List<Storyboard> ActiveStoryboards { get; set; }
+        List<Storyboard> ActiveStoryboards { get; set; } // Storyboards that are active at the time
 
-        List<DotAnimation> QueuedAnimations { get; set; }
+        List<DotAnimation> QueuedAnimations { get; set; } // Animations that should be queued when the model is paused
 
-        List<WeightedEdge> StartingEdges { get; set; }
+        List<WeightedEdge> StartingEdges { get; set; } // Edges with the starting dots
 
         int animCount, dotCount;
 
         bool isPaused = false;
+        private bool generateButtonOn;
 
-        public double AnimationSpeed { get; set; }
+        public double AnimationSpeed { get; set; } // Speed of the animation
 
         public string AnimationSpeedText
         {
             get
             {
-                return "Speed: " + Math.Round(Math.Exp(ExpConst * AnimationSpeed), 3) + "x";
+                return "Speed: " + Math.Round(Math.Exp(ExpConst * AnimationSpeed), 2) + "x";
             }
         }
 
+        public GraphGenerationParams GraphGenParams { get; set; }
+
         protected virtual void OnPropertyChanged(string propertyName = null)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        #region ButtonBools
+
+        public bool GenerateButtonOn { get => generateButtonOn; set { generateButtonOn = value; OnPropertyChanged("GenerateButtonOn"); } }
+
+        #endregion ButtonBools
 
         public MainWindow()
         {
-            //NameScope.SetNameScope(this, new NameScope());
             this.DataContext = this;
-            InitializeComponent();
-            CreateGraph();
-            ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             StartingEdges = new List<WeightedEdge>();
             ActiveStoryboards = new List<Storyboard>();
             QueuedAnimations = new List<DotAnimation>();
             AnimationSpeed = 0;
-            foreach (var edge in graphArea.EdgesList.Keys)
-            {
-                if (rnd.Next(2) != 0) StartingEdges.Add(edge);
-            }
+            GraphGenParams = new GraphGenerationParams();
             animCount = dotCount = 0;
-        }
-
-        private void CreateGraph()
-        {
-            //Create data graph object
-            graph = new MyGraph();
-
-            //Create and add vertices
-            for (int i = 0; i < 30; i++)
-            {
-                graph.AddVertex(new SyncVertex(i, rnd.Next(5, 8)));
-            }
-
-            var vlist = graph.Vertices.ToList();
-            //Generate random edges for the vertices
-            foreach (var item1 in vlist)
-            {
-                foreach (var item2 in vlist)
-                {
-                    if (item1 != item2 && rnd.Next(0, 5) < 1) graph.AddEdge(new WeightedEdge(item1, item2, rnd.NextDouble() * 8 + 1));
-                }
-            }
-            GenerateLogicCore();
-            graphArea.GenerateGraph(graph, true, true);
+            InitializeComponent();
+            ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
+            ThemeManager.Current.AccentColor = Colors.RoyalBlue;
+            ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
+            GenerateButtonOn = false;
         }
 
         private void GenerateLogicCore()
@@ -120,10 +104,9 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            DotAnimation anim;
             foreach (var edge in StartingEdges)
             {
-                anim = AnimateEdge(edge);
+                DotAnimation anim = AnimateEdge(edge);
                 if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
                 zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
                 ActiveStoryboards.Add(anim.Storyboard);
@@ -142,21 +125,26 @@ namespace SyncPoints
             EllipseGeometry dot = new EllipseGeometry(new Point(0, 0), 7.5, 7.5);
             animCount++;
             dotCount++;
-            if (dotCount > 2000) Environment.Exit(1);
+            Console.WriteLine(dotCount);
+            if (dotCount > 2000) Console.WriteLine("OH NO");
             //Console.WriteLine(dotCount);
             string dotName = "dot" + animCount; // Naming the object with a unique ID
             this.RegisterName(dotName, dot);
-            Path dotPath = new Path();
-            dotPath.Data = dot;
-            dotPath.Fill = Brushes.Blue;
+            Path dotPath = new Path
+            {
+                Data = dot,
+                Fill = Brushes.Blue
+            };
 
             PathGeometry animPath = edgeControl.GetEdgePathManually();
             animPath.Freeze();
 
-            PointAnimationUsingPath animation = new PointAnimationUsingPath();
-            animation.PathGeometry = animPath;
-            animation.Duration = TimeSpan.FromSeconds(edge.Weight * 0.5);
-            animation.RepeatBehavior = new RepeatBehavior(1); // Repeats once
+            PointAnimationUsingPath animation = new PointAnimationUsingPath
+            {
+                PathGeometry = animPath,
+                Duration = TimeSpan.FromSeconds(edge.Weight * 0.5),
+                RepeatBehavior = new RepeatBehavior(1) // Repeats once
+            };
             Storyboard.SetTargetName(animation, dotName);
             Storyboard.SetTargetProperty(animation, new PropertyPath(EllipseGeometry.CenterProperty)); // Animating the center of the dot
 
@@ -192,6 +180,8 @@ namespace SyncPoints
             return (new DotAnimation(animStoryboard, dotPath));
         }
 
+        #region Animation Control Panel
+
         private void resumeButton_Click(object sender, RoutedEventArgs e)
         {
             if (isPaused)
@@ -210,17 +200,6 @@ namespace SyncPoints
             }
         }
 
-        private void speedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            OnPropertyChanged("AnimationSpeedText");
-            foreach (var story in ActiveStoryboards)
-            {
-                Console.WriteLine(story.SpeedRatio);
-                story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                Console.WriteLine(story.SpeedRatio + "NEW");
-            }
-        }
-
         private void pauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isPaused)
@@ -231,6 +210,69 @@ namespace SyncPoints
                     story.Pause(zoomcontrol);
                 }
             }
+        }
+
+        private void speedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            OnPropertyChanged("AnimationSpeedText");
+            foreach (var story in ActiveStoryboards)
+            {
+                story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+            }
+        }
+
+        #endregion
+
+        #region Checking textbox validity
+        private void CheckGenButton(object sender, TextChangedEventArgs e)
+        {
+            if (GraphGenParams.CheckIfFilled()) GenerateButtonOn = true;
+            else GenerateButtonOn = false; 
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (GraphGenParams.CheckIfFilled()) GenerateButtonOn = true;
+            else GenerateButtonOn = false;
+        }
+        #endregion
+
+        private void StartStopButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
+        {
+            //Create data graph object
+            graph = new MyGraph();
+
+            //Create and add vertices
+            for (int i = 0; i < GraphGenParams.VertexCount; i++)
+            {
+                graph.AddVertex(new SyncVertex(i, rnd.Next(GraphGenParams.SyncLowerBound, GraphGenParams.SyncUpperBound + 1)));
+            }
+
+            var vlist = graph.Vertices.ToList();
+            //Generate random edges for the vertices
+            foreach (var item1 in vlist)
+            {
+                foreach (var item2 in vlist)
+                {
+                    if (item1 != item2 && 1 - rnd.NextDouble() <= GraphGenParams.EdgeProbability) graph.AddEdge(new WeightedEdge(item1, item2,
+                        rnd.NextDouble() * (GraphGenParams.WeightUpperBound - GraphGenParams.WeightLowerBound) + GraphGenParams.WeightLowerBound));
+                }
+            }
+            GenerateLogicCore();
+            StartingEdges.Clear();
+            foreach (var edge in graph.Edges)
+            {
+                if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) StartingEdges.Add(edge);
+            }
+            graphArea.GenerateGraph(graph, true, true);
+            graphGenPanel.Visibility = Visibility.Collapsed;
+            createGraph.FontSize = 26;
+            createGraph.Text = "Press the button to begin";
         }
     }
 }

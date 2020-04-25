@@ -68,11 +68,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DotAnimation.cs" />
+    <Compile Include="GraphGenerationParams.cs" />
     <Compile Include="MyGraphArea.cs" />
     <Compile Include="MyGraph.cs" />
     <Compile Include="MyGXLogicCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SyncVertex.cs" />
+    <Compile Include="ValidationRules\DoubleMinRule.cs" />
+    <Compile Include="ValidationRules\IntMinRule.cs" />
+    <Compile Include="ValidationRules\ProbabilityRule.cs" />
     <Compile Include="WeightedEdge.cs" />
   </ItemGroup>
   <ItemGroup>
