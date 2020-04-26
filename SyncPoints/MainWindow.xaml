@@ -5,7 +5,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SyncPoints"
         xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib"
-        xmlns:rules="clr-namespace:SyncPointsLib.ValidationRules;assembly=SyncPointsLib"
         xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
         mc:Ignorable="d"
         xmlns:ui="http://schemas.modernwpf.com/2019"
@@ -70,7 +69,7 @@
         <TextBlock Grid.Column="1" x:Name="createGraph" FontFamily="Yu Gothic UI" FontSize="35" FontWeight="DemiBold" TextWrapping="Wrap"
                    HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="RoyalBlue">Generate a graph</TextBlock>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphGenPanel" Visibility="Collapsed">
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphGenPanel" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
@@ -188,16 +187,32 @@
                 <TextBox VerticalAlignment="Center" Grid.Column="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
                     Height="30" Margin="10,0,10,0" Text="{Binding GraphGenParams.WeightUpperBound, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
             </Grid>
-            <Button Grid.Row="5" HorizontalAlignment="Left" VerticalAlignment="Center" Width="300" FontSize="25"  x:Name="GenerateGraphButton" Click="GenerateGraphButton_Click"
-                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" IsEnabled="{Binding GenerateButtonOn}" BorderThickness="2">Generate</Button>
+            <TextBlock Grid.Row="5" x:Name="WrongParams" VerticalAlignment="Top" HorizontalAlignment="Center" Foreground="Red" Margin="0,5,0,50" TextWrapping="Wrap"/>
+            <Button Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" FontSize="25"  x:Name="GenerateGraphButton" Click="GenerateGraphButton_Click"
+                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Generate</Button>
         </Grid>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphStatPanel">
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphStatPanel" Visibility="Collapsed">
             <Grid.RowDefinitions>
+                <RowDefinition Height="0.4*"/>
+                <RowDefinition Height="0.4*"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="7*"/>
             </Grid.RowDefinitions>
-            <Button Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" FontSize="30"  x:Name="StartStopButton" Click="StartStopButton_Click"
-                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" IsEnabled="{Binding GenerateButtonOn}" BorderThickness="2">Start</Button>
+            <CheckBox HorizontalAlignment="Center" IsChecked="{Binding UseSandpileModel}" Foreground="RoyalBlue" Content="Use sandpile model" FontFamily="Yu Gothic UI" FontWeight="DemiBold" IsEnabled="{Binding AnimNotStarted}"/>
+            <CheckBox Grid.Row="1" HorizontalAlignment="Center" IsChecked="{Binding DisableDots}" Foreground="RoyalBlue" Content="Disable point animations to save performance" FontFamily="Yu Gothic UI" FontWeight="DemiBold" IsEnabled="{Binding AnimNotStarted}"/>
+            <Button Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="250" FontSize="30"  x:Name="StartStopButton" Click="StartStopButton_Click"
+                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Start</Button>
+            <StackPanel Grid.Row="3">
+                <TextBlock Foreground="RoyalBlue" FontSize="30" FontWeight="DemiBold" HorizontalAlignment="Center">Statistics</TextBlock>
+                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold">
+                    <Run Text="Total points created: "/>
+                    <Run Text="{Binding Stats.DotCount, Mode=TwoWay}"/>
+                </TextBlock>
+                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold">
+                    <Run Text="Moving points: "/>
+                    <Run Text="{Binding Stats.CurrentDotCount, Mode=TwoWay}"/>
+                </TextBlock>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

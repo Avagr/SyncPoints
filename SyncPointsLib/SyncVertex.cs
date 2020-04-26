@@ -1,7 +1,7 @@
-﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using GraphX.PCL.Common.Models;
+﻿using GraphX.PCL.Common.Models;
 using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace SyncPointsLib
 {
@@ -20,11 +20,11 @@ namespace SyncPointsLib
             set
             {
                 sync = value;
-                NotifyPropertyChanged();
+                NotifyPropertyChanged("Sync");
             }
         }
 
-        private readonly int initSync; // Synchronization to reset to 
+        public readonly int initSync; // Synchronization to reset to 
         private int sync;
 
         public SyncVertex() { }

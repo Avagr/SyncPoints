@@ -1,0 +1,4 @@
+Statistics:
+1. Total dot counter
+2. Active dot counter
+3. Dictionary of vertices : int[] dots in, sots out

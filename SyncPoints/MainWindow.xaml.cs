@@ -15,6 +15,8 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Reflection;
+using System.Windows.Threading;
 
 namespace SyncPoints
 {
@@ -37,14 +39,23 @@ namespace SyncPoints
 
         List<Storyboard> ActiveStoryboards { get; set; } // Storyboards that are active at the time
 
+        List<Path> ActivePaths { get; set; }
+
         List<DotAnimation> QueuedAnimations { get; set; } // Animations that should be queued when the model is paused
 
         List<WeightedEdge> StartingEdges { get; set; } // Edges with the starting dots
 
-        int animCount, dotCount;
-
-        bool isPaused = false;
+        private bool isPaused = false;
+        private bool isStopping = false;
         private bool generateButtonOn;
+        private bool animationStarted = false;
+        private StatisticsModule stats;
+
+        public bool AnimNotStarted { get => !animationStarted; }
+
+        public bool UseSandpileModel { get; set; }
+
+        public bool DisableDots { get; set; }
 
         public double AnimationSpeed { get; set; } // Speed of the animation
 
@@ -57,6 +68,8 @@ namespace SyncPoints
         }
 
         public GraphGenerationParams GraphGenParams { get; set; }
+
+        public StatisticsModule Stats { get => stats; set { stats = value; OnPropertyChanged("Stats"); } }
 
         protected virtual void OnPropertyChanged(string propertyName = null)
         {
@@ -74,10 +87,10 @@ namespace SyncPoints
             this.DataContext = this;
             StartingEdges = new List<WeightedEdge>();
             ActiveStoryboards = new List<Storyboard>();
+            ActivePaths = new List<Path>();
             QueuedAnimations = new List<DotAnimation>();
             AnimationSpeed = 0;
             GraphGenParams = new GraphGenerationParams();
-            animCount = dotCount = 0;
             InitializeComponent();
             ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             ThemeManager.Current.AccentColor = Colors.RoyalBlue;
@@ -104,12 +117,13 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var edge in StartingEdges)
+            foreach (var item in mainPanel.Children)
             {
-                DotAnimation anim = AnimateEdge(edge);
-                if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                ActiveStoryboards.Add(anim.Storyboard);
+                Console.WriteLine(item);
+            }
+            foreach (var item in mainPanel.Children)
+            {
+                if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
             }
         }
 
@@ -123,12 +137,9 @@ namespace SyncPoints
             EdgeControl edgeControl = graphArea.EdgesList[edge];
             edgeControl.ManualDrawing = true;
             EllipseGeometry dot = new EllipseGeometry(new Point(0, 0), 7.5, 7.5);
-            animCount++;
-            dotCount++;
-            Console.WriteLine(dotCount);
-            if (dotCount > 2000) Console.WriteLine("OH NO");
-            //Console.WriteLine(dotCount);
-            string dotName = "dot" + animCount; // Naming the object with a unique ID
+            Stats.DotCount++;
+            Stats.CurrentDotCount++;
+            string dotName = "dot" + Stats.DotCount; // Naming the object with a unique ID
             this.RegisterName(dotName, dot);
             Path dotPath = new Path
             {
@@ -151,33 +162,67 @@ namespace SyncPoints
             Storyboard animStoryboard = new Storyboard();
             animStoryboard.Children.Add(animation);
             this.RegisterName(dotName + "Storyboard", animStoryboard);
+            CheckDotCount(null, null);
             animStoryboard.RepeatBehavior = new RepeatBehavior(1); // Repeats one
-
             animStoryboard.Completed += (object e, EventArgs args) =>
             {
-                mainPanel.Children.Remove(dotPath);
-                dotCount--;
-                edge.Target.Sync--;
-                ActiveStoryboards.Remove(animStoryboard);
-                if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
+                if (!isStopping)
                 {
-                    if (!isPaused)
+                    mainPanel.Children.Remove(dotPath);
+                    ActivePaths.Remove(dotPath);
+                    Stats.CurrentDotCount--;
+                    edge.Target.Sync--;
+                    Stats.VertexStatistics[edge.Target].DotsIn++;
+                    Stats.VertexStatistics[edge.Target].DecreaseSync();
+                    ActiveStoryboards.Remove(animStoryboard);
+                    if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
                     {
-                        foreach (var outEdge in graph.OutEdges(edge.Target))
+                        if (!isPaused)
                         {
-                            DotAnimation anim = AnimateEdge(outEdge);
-                            if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                            ActiveStoryboards.Add(anim.Storyboard);
-                            zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                            anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                            foreach (var outEdge in graph.OutEdges(edge.Target))
+                            {
+                                if (UseSandpileModel)
+                                {
+                                    edge.Target.Sync++;
+                                    Stats.VertexStatistics[edge.Target].IncreaseSync();
+                                    if (edge.Target.Sync >= edge.Target.initSync) break;
+                                }
+                                if (isStopping) break;
+                                DotAnimation anim = AnimateEdge(outEdge);
+                                if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                                ActiveStoryboards.Add(anim.Storyboard);
+                                if (isStopping) break;
+                                ActivePaths.Add(anim.Path);
+                                Stats.VertexStatistics[outEdge.Source].DotsOut++;
+                                zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                                anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                            }
+                        }
+                        else foreach (var outEdge in graph.OutEdges(edge.Target)) QueuedAnimations.Add(AnimateEdge(edge));
+                        if (!UseSandpileModel)
+                        {
+                            edge.Target.ResetSync();
+                            Stats.VertexStatistics[edge.Target].SyncHistory.Add(edge.Target.Sync);
                         }
                     }
-                    else foreach (var outEdge in graph.OutEdges(edge.Target)) QueuedAnimations.Add(AnimateEdge(edge));
-                    edge.Target.ResetSync();
                 }
             };
 
             return (new DotAnimation(animStoryboard, dotPath));
+        }
+
+        /// <summary>
+        /// Checks whether the animation kimit is exceeded
+        /// </summary>
+        private void CheckDotCount(object obj, EventArgs args)
+        {
+            Console.WriteLine(Stats.CurrentDotCount + "Checking " + DateTime.Now);
+            if (Stats.CurrentDotCount > 2000)
+            {
+                animationStarted = !animationStarted;
+                OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
+                StopAnimation();
+            }
         }
 
         #region Animation Control Panel
@@ -223,34 +268,122 @@ namespace SyncPoints
 
         #endregion
 
-        #region Checking textbox validity
+        #region Checking textbox validity - not needed right now
         private void CheckGenButton(object sender, TextChangedEventArgs e)
         {
-            if (GraphGenParams.CheckIfFilled()) GenerateButtonOn = true;
-            else GenerateButtonOn = false; 
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (GraphGenParams.CheckIfFilled()) GenerateButtonOn = true;
-            else GenerateButtonOn = false;
         }
         #endregion
 
         private void StartStopButton_Click(object sender, RoutedEventArgs e)
         {
+            animationStarted = !animationStarted;
+            OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
+            if (animationStarted)
+            {
+                // Cleaning all paths from the canvas, just in case
+                foreach (var item in mainPanel.Children)
+                {
+                    if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
+                }
+                isStopping = false;
+                isPaused = false;
+                Stats = new StatisticsModule(graph);
+                StartStopButton.Content = "Stop";
+                foreach (var edge in StartingEdges)
+                {
+                    DotAnimation anim = AnimateEdge(edge);
+                    Stats.VertexStatistics[edge.Source].DotsOut++;
+                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                    ActiveStoryboards.Add(anim.Storyboard);
+                    ActivePaths.Add(anim.Path);
+                }
+            }
+            else
+            {
+                StopAnimation();
+            }
+        }
 
+        /// <summary>
+        /// Stops the entire graph model
+        /// </summary>
+        private void StopAnimation()
+        {
+            checkDots = null;
+            isStopping = true;
+            isPaused = true;
+            StartStopButton.Content = "Start";
+            foreach (var anim in ActiveStoryboards)
+            {
+                anim.Stop(zoomcontrol);
+                anim.Remove(zoomcontrol);
+            }
+            foreach (var path in ActivePaths)
+            {
+                mainPanel.Children.Remove(path);
+            }
+            for (int i = 0; i < Stats.DotCount; i++)
+            {
+                UnregisterName("dot" + (i + 1));
+                UnregisterName("dot" + (i + 1) + "Storyboard");
+            }
+            foreach (var vert in graph.Vertices)
+            {
+                vert.ResetSync();
+            }
+            foreach (var item in mainPanel.Children)
+            {
+                if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
+            }
+            graphArea.UpdateLayout();
+            QueuedAnimations.Clear();
+            ActiveStoryboards.Clear();
+            ActivePaths.Clear();
         }
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
+            //if (!GraphGenParams.CheckIfFilled())
+            //{
+            //    WrongParams.Text = "Invalid parameters. Every field must contain a valid value.";
+            //    return;
+            //}
+            WrongParams.Foreground = Brushes.RoyalBlue;
+            WrongParams.Text = "Generating...";
             //Create data graph object
             graph = new MyGraph();
 
+            ////Create and add vertices
+            //for (int i = 0; i < GraphGenParams.VertexCount; i++)
+            //{
+            //    graph.AddVertex(new SyncVertex(i, rnd.Next(GraphGenParams.SyncLowerBound, GraphGenParams.SyncUpperBound + 1)));
+            //}
+
+            //var vlist = graph.Vertices.ToList();
+            ////Generate random edges for the vertices
+            //foreach (var item1 in vlist)
+            //{
+            //    foreach (var item2 in vlist)
+            //    {
+            //        if (item1 != item2 && 1 - rnd.NextDouble() <= GraphGenParams.EdgeProbability) graph.AddEdge(new WeightedEdge(item1, item2,
+            //            rnd.NextDouble() * (GraphGenParams.WeightUpperBound - GraphGenParams.WeightLowerBound) + GraphGenParams.WeightLowerBound));
+            //    }
+            //}
+            //GenerateLogicCore();
+            //StartingEdges.Clear();
+            //foreach (var edge in graph.Edges)
+            //{
+            //    if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) StartingEdges.Add(edge);
+            //}
             //Create and add vertices
-            for (int i = 0; i < GraphGenParams.VertexCount; i++)
+            for (int i = 0; i < 20; i++)
             {
-                graph.AddVertex(new SyncVertex(i, rnd.Next(GraphGenParams.SyncLowerBound, GraphGenParams.SyncUpperBound + 1)));
+                graph.AddVertex(new SyncVertex(i, rnd.Next(3, 6 + 1)));
             }
 
             var vlist = graph.Vertices.ToList();
@@ -259,20 +392,23 @@ namespace SyncPoints
             {
                 foreach (var item2 in vlist)
                 {
-                    if (item1 != item2 && 1 - rnd.NextDouble() <= GraphGenParams.EdgeProbability) graph.AddEdge(new WeightedEdge(item1, item2,
-                        rnd.NextDouble() * (GraphGenParams.WeightUpperBound - GraphGenParams.WeightLowerBound) + GraphGenParams.WeightLowerBound));
+                    if (item1 != item2 && 1 - rnd.NextDouble() <= 0.35) graph.AddEdge(new WeightedEdge(item1, item2,
+                        rnd.NextDouble() * (2) + 1));
                 }
             }
             GenerateLogicCore();
             StartingEdges.Clear();
             foreach (var edge in graph.Edges)
             {
-                if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) StartingEdges.Add(edge);
+                if (1 - rnd.NextDouble() <= 0.4) StartingEdges.Add(edge);
             }
             graphArea.GenerateGraph(graph, true, true);
             graphGenPanel.Visibility = Visibility.Collapsed;
+            graphStatPanel.Visibility = Visibility.Visible;
             createGraph.FontSize = 26;
-            createGraph.Text = "Press the button to begin";
+            createGraph.Text = "";
+            Stats = new StatisticsModule(graph);
         }
+
     }
 }

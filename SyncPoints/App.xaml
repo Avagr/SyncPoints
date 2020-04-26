@@ -33,7 +33,7 @@
                                         <RowDefinition/>
                                         <RowDefinition/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White" Text="{Binding Path=Vertex.Sync, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <TextBlock FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White" Text="{Binding Path=Vertex.Sync, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 </Grid>
                             </Border>
                         </ControlTemplate>
