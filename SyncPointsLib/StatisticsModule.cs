@@ -14,8 +14,6 @@ namespace SyncPointsLib
         private int dotCount;
         private int curDotCount;
 
-        BidirectionalGraph<SyncVertex, WeightedEdge> graph;
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName = null)
@@ -35,7 +33,9 @@ namespace SyncPointsLib
 
         public DateTime StartTime { get; }
 
-        public TimeSpan TimeElapsed { get => DateTime.Now - StartTime; }
+        public TimeSpan PausedTime { get; set; }
+
+        public TimeSpan TimeElapsed { get => DateTime.Now - StartTime - PausedTime; }
 
         /// <summary>
         /// Records how many dots have come in and out of each vertex
@@ -46,7 +46,7 @@ namespace SyncPointsLib
 
         public StatisticsModule(BidirectionalGraph<SyncVertex, WeightedEdge> graph)
         {
-            this.graph = graph;
+            PausedTime = new TimeSpan(0);
             StartTime = DateTime.Now;
             DotCount = 0;
             CurrentDotCount = 0;

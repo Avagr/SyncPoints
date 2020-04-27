@@ -2,21 +2,22 @@
 using GraphX.PCL.Common.Enums;
 using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.PCL.Logic.Algorithms.OverlapRemoval;
+using LiveCharts;
+using LiveCharts.Configurations;
 using ModernWpf;
-using System.Windows.Controls;
-using ModernWpf.Controls.Primitives;
 using QuickGraph;
 using SyncPointsLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
-using System.Reflection;
-using System.Windows.Threading;
 
 namespace SyncPoints
 {
@@ -49,6 +50,7 @@ namespace SyncPoints
         private bool isStopping = false;
         private bool generateButtonOn;
         private bool animationStarted = false;
+        private DateTime pauseTime;
         private StatisticsModule stats;
 
         public bool AnimNotStarted { get => !animationStarted; }
@@ -81,6 +83,38 @@ namespace SyncPoints
         public bool GenerateButtonOn { get => generateButtonOn; set { generateButtonOn = value; OnPropertyChanged("GenerateButtonOn"); } }
 
         #endregion ButtonBools
+
+        #region Charting
+
+        public List<PointValues> ChartValues { get; set; }
+
+        public bool IsReading { get; set; }
+
+        void InitializeChart()
+        {
+            var mapper = Mappers.Xy<PointValues>()
+            .X(model => model.TimeElapsed.Ticks)   //use TimeElapsed.Ticks as X
+            .Y(model => model.PointNumber);
+            Charting.For<PointValues>(mapper);
+            ChartValues = new List<PointValues>();
+
+            IsReading = false;
+        }
+
+        private void Read()
+        {
+            while (IsReading)
+            {
+                Thread.Sleep(500);
+
+                ChartValues.Add(new PointValues
+                {
+                    TimeElapsed = Stats.TimeElapsed,
+                    PointNumber = Stats.CurrentDotCount
+                });
+            }
+        }
+        #endregion
 
         public MainWindow()
         {
@@ -117,14 +151,8 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in mainPanel.Children)
-            {
-                Console.WriteLine(item);
-            }
-            foreach (var item in mainPanel.Children)
-            {
-                if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
-            }
+            var chartWindow = new ChartWindow("Test Label", ChartValues);
+            chartWindow.Show();
         }
 
         /// <summary>
@@ -175,6 +203,11 @@ namespace SyncPoints
                     Stats.VertexStatistics[edge.Target].DotsIn++;
                     Stats.VertexStatistics[edge.Target].DecreaseSync();
                     ActiveStoryboards.Remove(animStoryboard);
+                    if (ActiveStoryboards.Count == 0)
+                    {
+                        StopAnimation();
+                        return;
+                    }
                     if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
                     {
                         if (!isPaused)
@@ -212,11 +245,10 @@ namespace SyncPoints
         }
 
         /// <summary>
-        /// Checks whether the animation kimit is exceeded
+        /// Checks whether the animation limit is exceeded
         /// </summary>
         private void CheckDotCount(object obj, EventArgs args)
         {
-            Console.WriteLine(Stats.CurrentDotCount + "Checking " + DateTime.Now);
             if (Stats.CurrentDotCount > 2000)
             {
                 animationStarted = !animationStarted;
@@ -231,6 +263,7 @@ namespace SyncPoints
         {
             if (isPaused)
             {
+                Stats.PausedTime += DateTime.Now - pauseTime;
                 foreach (var anim in QueuedAnimations)
                 {
                     if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
@@ -238,6 +271,7 @@ namespace SyncPoints
                     zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
                 }
                 isPaused = false;
+                StartChartReader();
                 foreach (var story in ActiveStoryboards)
                 {
                     story.Resume(zoomcontrol);
@@ -249,6 +283,8 @@ namespace SyncPoints
         {
             if (!isPaused)
             {
+                pauseTime = DateTime.Now;
+                IsReading = false;
                 isPaused = true;
                 foreach (var story in ActiveStoryboards)
                 {
@@ -284,24 +320,7 @@ namespace SyncPoints
             OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
             if (animationStarted)
             {
-                // Cleaning all paths from the canvas, just in case
-                foreach (var item in mainPanel.Children)
-                {
-                    if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
-                }
-                isStopping = false;
-                isPaused = false;
-                Stats = new StatisticsModule(graph);
-                StartStopButton.Content = "Stop";
-                foreach (var edge in StartingEdges)
-                {
-                    DotAnimation anim = AnimateEdge(edge);
-                    Stats.VertexStatistics[edge.Source].DotsOut++;
-                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                    ActiveStoryboards.Add(anim.Storyboard);
-                    ActivePaths.Add(anim.Path);
-                }
+                StartAnimation();
             }
             else
             {
@@ -310,11 +329,54 @@ namespace SyncPoints
         }
 
         /// <summary>
+        /// Starts the animation
+        /// </summary>
+        private void StartAnimation()
+        {
+            animationStarted = true;
+            // Cleaning all paths from the canvas, just in case
+            foreach (var item in mainPanel.Children)
+            {
+                if (item is Path) ((UIElement)item).Visibility = Visibility.Collapsed;
+            }
+            foreach (var vert in graph.Vertices)
+            {
+                vert.ResetSync();
+            }
+            isStopping = false;
+            isPaused = false;
+            Stats = new StatisticsModule(graph);
+            StartStopButton.Content = "Stop";
+            foreach (var edge in StartingEdges)
+            {
+                DotAnimation anim = AnimateEdge(edge);
+                Stats.VertexStatistics[edge.Source].DotsOut++;
+                if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                ActiveStoryboards.Add(anim.Storyboard);
+                ActivePaths.Add(anim.Path);
+            }
+            StartChartReader();
+            ChartValues.Clear();
+            ChartValues.Add(new PointValues { PointNumber = StartingEdges.Count, TimeElapsed = TimeSpan.FromSeconds(0) });
+        }
+
+        /// <summary>
+        /// Starts the updater method
+        /// </summary>
+        private void StartChartReader()
+        {
+            IsReading = true;
+            Task.Factory.StartNew(Read);
+        }
+
+        /// <summary>
         /// Stops the entire graph model
         /// </summary>
         private void StopAnimation()
         {
-            checkDots = null;
+            animationStarted = false;
+            IsReading = false;
             isStopping = true;
             isPaused = true;
             StartStopButton.Content = "Start";
@@ -331,10 +393,6 @@ namespace SyncPoints
             {
                 UnregisterName("dot" + (i + 1));
                 UnregisterName("dot" + (i + 1) + "Storyboard");
-            }
-            foreach (var vert in graph.Vertices)
-            {
-                vert.ResetSync();
             }
             foreach (var item in mainPanel.Children)
             {
@@ -383,7 +441,7 @@ namespace SyncPoints
             //Create and add vertices
             for (int i = 0; i < 20; i++)
             {
-                graph.AddVertex(new SyncVertex(i, rnd.Next(3, 6 + 1)));
+                graph.AddVertex(new SyncVertex(i, rnd.Next(6, 8 + 1)));
             }
 
             var vlist = graph.Vertices.ToList();
@@ -400,7 +458,7 @@ namespace SyncPoints
             StartingEdges.Clear();
             foreach (var edge in graph.Edges)
             {
-                if (1 - rnd.NextDouble() <= 0.4) StartingEdges.Add(edge);
+                if (1 - rnd.NextDouble() <= 0.8) StartingEdges.Add(edge);
             }
             graphArea.GenerateGraph(graph, true, true);
             graphGenPanel.Visibility = Visibility.Collapsed;
@@ -408,7 +466,13 @@ namespace SyncPoints
             createGraph.FontSize = 26;
             createGraph.Text = "";
             Stats = new StatisticsModule(graph);
+            InitializeChart();
         }
 
+        private void chartButton_Click(object sender, RoutedEventArgs e)
+        {
+            var chartWindow = new ChartWindow("Active points", ChartValues);
+            chartWindow.Show();
+        }
     }
 }

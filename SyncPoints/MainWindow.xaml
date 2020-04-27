@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:SyncPoints"
         xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib"
         xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         mc:Ignorable="d"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
@@ -69,7 +70,7 @@
         <TextBlock Grid.Column="1" x:Name="createGraph" FontFamily="Yu Gothic UI" FontSize="35" FontWeight="DemiBold" TextWrapping="Wrap"
                    HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="RoyalBlue">Generate a graph</TextBlock>
         <Button x:Name="TestDot" Click="TestDot_Click"/>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphGenPanel" Visibility="Visible">
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphGenPanel" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
@@ -191,7 +192,7 @@
             <Button Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" FontSize="25"  x:Name="GenerateGraphButton" Click="GenerateGraphButton_Click"
                     FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Generate</Button>
         </Grid>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphStatPanel" Visibility="Collapsed">
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphStatPanel" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="0.4*"/>
                 <RowDefinition Height="0.4*"/>
@@ -202,17 +203,36 @@
             <CheckBox Grid.Row="1" HorizontalAlignment="Center" IsChecked="{Binding DisableDots}" Foreground="RoyalBlue" Content="Disable point animations to save performance" FontFamily="Yu Gothic UI" FontWeight="DemiBold" IsEnabled="{Binding AnimNotStarted}"/>
             <Button Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="250" FontSize="30"  x:Name="StartStopButton" Click="StartStopButton_Click"
                     FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Start</Button>
-            <StackPanel Grid.Row="3">
-                <TextBlock Foreground="RoyalBlue" FontSize="30" FontWeight="DemiBold" HorizontalAlignment="Center">Statistics</TextBlock>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold">
+            <Grid Grid.Row="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Foreground="RoyalBlue" FontSize="30" FontWeight="DemiBold" HorizontalAlignment="Center">Statistics:</TextBlock>
+                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="1">
                     <Run Text="Total points created: "/>
                     <Run Text="{Binding Stats.DotCount, Mode=TwoWay}"/>
                 </TextBlock>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold">
-                    <Run Text="Moving points: "/>
-                    <Run Text="{Binding Stats.CurrentDotCount, Mode=TwoWay}"/>
+                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="2">
+                        <Run Text="Active points: "/>
+                        <Run Text="{Binding Stats.CurrentDotCount, Mode=TwoWay}"/>
                 </TextBlock>
-            </StackPanel>
+                <Button x:Name="chartButton" Click="chartButton_Click" Grid.Row="2"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
+                    HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="5">
+                    <Grid Width="{Binding ElementName=chartButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
+                         Height="{Binding ElementName=chartButton, Path=ActualHeight}">
+                        <Path Data="M4 19V20H22V22H2V2H4V17C7 17 10 15 12.1 11.4C15.1 6.4 18.4 4 22 4V6C19.2 6 16.5 8.1 13.9 12.5C11.3 16.6 7.7 19 4 19Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                    </Grid>
+                </Button>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
