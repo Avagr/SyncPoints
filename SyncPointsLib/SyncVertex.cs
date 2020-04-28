@@ -2,6 +2,8 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
+using System.Windows.Media;
 
 namespace SyncPointsLib
 {
@@ -24,8 +26,12 @@ namespace SyncPointsLib
             }
         }
 
-        public readonly int initSync; // Synchronization to reset to 
+        [JsonIgnore]
+        public Brush Background { get => background; set { background = value; NotifyPropertyChanged("Background"); } }
+
+        public int InitSync { get; } // Synchronization to reset to 
         private int sync;
+        private Brush background;
 
         public SyncVertex() { }
 
@@ -33,8 +39,9 @@ namespace SyncPointsLib
         {
             if (sync < 1) throw new ArgumentException("Sync counter cannot be less than 1");
             ID = id;
-            initSync = sync;
+            InitSync = sync;
             Sync = sync;
+            Background = Brushes.OrangeRed;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -44,7 +51,7 @@ namespace SyncPointsLib
         /// </summary>
         public void ResetSync()
         {
-            Sync = initSync;
+            Sync = InitSync;
         }
 
         public override string ToString()

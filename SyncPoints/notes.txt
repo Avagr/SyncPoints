@@ -1,4 +1,6 @@
 Statistics:
 1. Total dot counter
 2. Active dot counter
-3. Dictionary of vertices : int[] dots in, sots out
+3. Dictionary of vertices : (dots in, dots out) тупиковые точки брать отсюда
+4. Starting Time
+5.  

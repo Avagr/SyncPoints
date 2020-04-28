@@ -17,7 +17,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="graphxctrl:VertexControl">
-                            <Border Background="OrangeRed" 
+                            <Border Background="{Binding Path=Vertex.Background, RelativeSource={RelativeSource TemplatedParent}}" 
                             BorderBrush="{TemplateBinding BorderBrush}"
 							CornerRadius="10,10,10,10" MinWidth="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
 						    Padding="{TemplateBinding Padding}">

@@ -1,6 +1,5 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:SyncPoints.Drawings">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Path Fill="White" x:Key="resumeIcon" Data="M8,5.14V19.14L19,12.14L8,5.14Z"/>
     <Path Fill="White" x:Key="pauseIcon" Data="M14,19H18V5H14M6,19H10V5H6V19Z" />
     <Path Fill="White" x:Key="fastforwardIcon" Data="M13,6V18L21.5,12M4,18L12.5,12L4,6V18Z" />

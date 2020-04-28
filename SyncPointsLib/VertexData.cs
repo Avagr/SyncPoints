@@ -1,24 +1,30 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace SyncPointsLib
 {
-    public class VertexData
+    public class VertexData : INotifyPropertyChanged
     {
+        private int dotsOut;
+        private int dotsIn;
+
         /// <summary>
         /// Number of dots that went into a vertex
         /// </summary>
-        public int DotsOut { get; set; }
+        public int DotsOut { get => dotsOut; set { dotsOut = value; OnPropertyChanged("DotsOut"); } }
 
         /// <summary>
         /// Number of dots that went out of the vertex
         /// </summary>
-        public int DotsIn { get; set; }
+        public int DotsIn { get => dotsIn; set { dotsIn = value; OnPropertyChanged("DotsIn"); } }
 
         /// <summary>
         /// All the sync values
         /// </summary>
         public List<int> SyncHistory { get; set; }
+
+        public VertexData() { }
 
         public VertexData(int initSync)
         {
@@ -41,6 +47,13 @@ namespace SyncPointsLib
         public void IncreaseSync()
         {
             SyncHistory.Add(SyncHistory.Last() + 1);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -10,6 +10,7 @@ using SyncPointsLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,10 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Path = System.Windows.Shapes.Path;
+using Microsoft.Win32;
 
 namespace SyncPoints
 {
@@ -132,6 +137,9 @@ namespace SyncPoints
             GenerateButtonOn = false;
         }
 
+        /// <summary>
+        /// Generates a logic core for the graph
+        /// </summary>
         private void GenerateLogicCore()
         {
             var LogicCore = new MyGXLogicCore();
@@ -151,8 +159,11 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            var chartWindow = new ChartWindow("Test Label", ChartValues);
-            chartWindow.Show();
+            foreach (var vert in graph.Vertices)
+            {
+                vert.ResetSync();
+                vert.Background = Brushes.Purple;
+            }
         }
 
         /// <summary>
@@ -202,10 +213,12 @@ namespace SyncPoints
                     edge.Target.Sync--;
                     Stats.VertexStatistics[edge.Target].DotsIn++;
                     Stats.VertexStatistics[edge.Target].DecreaseSync();
+                    Stats.DistanceTravelled += edge.Weight;
                     ActiveStoryboards.Remove(animStoryboard);
                     if (ActiveStoryboards.Count == 0)
                     {
                         StopAnimation();
+                        HighlightDeadEnds();
                         return;
                     }
                     if (edge.Target.Sync < 1 && !graph.IsOutEdgesEmpty(edge.Target))
@@ -218,7 +231,7 @@ namespace SyncPoints
                                 {
                                     edge.Target.Sync++;
                                     Stats.VertexStatistics[edge.Target].IncreaseSync();
-                                    if (edge.Target.Sync >= edge.Target.initSync) break;
+                                    if (edge.Target.Sync >= edge.Target.InitSync) break;
                                 }
                                 if (isStopping) break;
                                 DotAnimation anim = AnimateEdge(outEdge);
@@ -245,6 +258,20 @@ namespace SyncPoints
         }
 
         /// <summary>
+        /// Highlights the dead ends of the graph
+        /// </summary>
+        private void HighlightDeadEnds()
+        {
+            statMessage1.Text = "Animation finished. Ending vertices have been";
+            statMessagePurple.Text = "highlighted.";
+            Stats.FindDeadEnds();
+            foreach (var vert in Stats.DeadEndVertices)
+            {
+                vert.Background = Brushes.Purple;
+            }
+        }
+
+        /// <summary>
         /// Checks whether the animation limit is exceeded
         /// </summary>
         private void CheckDotCount(object obj, EventArgs args)
@@ -254,6 +281,7 @@ namespace SyncPoints
                 animationStarted = !animationStarted;
                 OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
                 StopAnimation();
+                MessageBox.Show("The animation had to be terminated due to an extremely high amount of dots on screen. Consider disabling the animations to save performace.");
             }
         }
 
@@ -334,6 +362,7 @@ namespace SyncPoints
         private void StartAnimation()
         {
             animationStarted = true;
+            OnPropertyChanged("AnimNotStarted");
             // Cleaning all paths from the canvas, just in case
             foreach (var item in mainPanel.Children)
             {
@@ -342,7 +371,10 @@ namespace SyncPoints
             foreach (var vert in graph.Vertices)
             {
                 vert.ResetSync();
+                vert.Background = Brushes.OrangeRed;
             }
+            statMessage1.Text = "Animation in progress";
+            statMessagePurple.Text = "";
             isStopping = false;
             isPaused = false;
             Stats = new StatisticsModule(graph);
@@ -376,6 +408,7 @@ namespace SyncPoints
         private void StopAnimation()
         {
             animationStarted = false;
+            OnPropertyChanged("AnimNotStarted");
             IsReading = false;
             isStopping = true;
             isPaused = true;
@@ -441,7 +474,7 @@ namespace SyncPoints
             //Create and add vertices
             for (int i = 0; i < 20; i++)
             {
-                graph.AddVertex(new SyncVertex(i, rnd.Next(6, 8 + 1)));
+                graph.AddVertex(new SyncVertex(i, rnd.Next(8, 8 + 1)));
             }
 
             var vlist = graph.Vertices.ToList();
@@ -464,15 +497,44 @@ namespace SyncPoints
             graphGenPanel.Visibility = Visibility.Collapsed;
             graphStatPanel.Visibility = Visibility.Visible;
             createGraph.FontSize = 26;
-            createGraph.Text = "";
+            createGraph.Text = "Generation finished";
             Stats = new StatisticsModule(graph);
             InitializeChart();
+            statMessage1.Text = "Graph successfully generated";
+            statMessagePurple.Text = "";
         }
 
         private void chartButton_Click(object sender, RoutedEventArgs e)
         {
             var chartWindow = new ChartWindow("Active points", ChartValues);
             chartWindow.Show();
+        }
+
+        private void viewVertexStats_Click(object sender, RoutedEventArgs e)
+        {
+            var statsWindow = new VertexStatsWindow(Stats.VertexStatistics);
+            statsWindow.Show();
+        }
+
+        private async void exportStats_Click(object sender, RoutedEventArgs e)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+
+            };
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "JSON file (*.json)|*.json|Text file (*.txt)|*.txt",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                using (FileStream fs = File.Create(dialog.FileName))
+                {
+                    await JsonSerializer.SerializeAsync(fs, Stats);
+                }
+            }
         }
     }
 }
