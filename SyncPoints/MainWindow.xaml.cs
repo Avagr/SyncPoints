@@ -19,17 +19,16 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Path = System.Windows.Shapes.Path;
 using Microsoft.Win32;
+using ModernWpf.Controls;
+using QuickGraph.Serialization;
+using System.Xml;
+using System.Text.Json;
+using QuickGraph.Algorithms;
 
 namespace SyncPoints
 {
-    /// <summary>
-    /// Layout visual class
-    /// </summary>
-    public class MyGraphArea : GraphArea<SyncVertex, WeightedEdge, BidirectionalGraph<SyncVertex, WeightedEdge>> { }
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -49,14 +48,14 @@ namespace SyncPoints
 
         List<DotAnimation> QueuedAnimations { get; set; } // Animations that should be queued when the model is paused
 
-        List<WeightedEdge> StartingEdges { get; set; } // Edges with the starting dots
-
         private bool isPaused = false;
         private bool isStopping = false;
-        private bool generateButtonOn;
         private bool animationStarted = false;
         private DateTime pauseTime;
         private StatisticsModule stats;
+        private bool newGraphButtonEnabled;
+        private bool loadGraphButtonEnabled;
+        private bool saveGraphButtonEnabled;
 
         public bool AnimNotStarted { get => !animationStarted; }
 
@@ -82,12 +81,6 @@ namespace SyncPoints
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-        #region ButtonBools
-
-        public bool GenerateButtonOn { get => generateButtonOn; set { generateButtonOn = value; OnPropertyChanged("GenerateButtonOn"); } }
-
-        #endregion ButtonBools
 
         #region Charting
 
@@ -123,8 +116,8 @@ namespace SyncPoints
 
         public MainWindow()
         {
+            SaveGraphButtonEnabled = false;
             this.DataContext = this;
-            StartingEdges = new List<WeightedEdge>();
             ActiveStoryboards = new List<Storyboard>();
             ActivePaths = new List<Path>();
             QueuedAnimations = new List<DotAnimation>();
@@ -134,7 +127,8 @@ namespace SyncPoints
             ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             ThemeManager.Current.AccentColor = Colors.RoyalBlue;
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
-            GenerateButtonOn = false;
+            NewGraphButtonEnabled = true;
+            LoadGraphButtonEnabled = true;
         }
 
         /// <summary>
@@ -142,8 +136,10 @@ namespace SyncPoints
         /// </summary>
         private void GenerateLogicCore()
         {
-            var LogicCore = new MyGXLogicCore();
-            LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
+            var LogicCore = new MyGXLogicCore
+            {
+                DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK
+            };
             LogicCore.DefaultLayoutAlgorithmParams =
                                LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.KK);
             ((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 1000;
@@ -159,11 +155,8 @@ namespace SyncPoints
 
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var vert in graph.Vertices)
-            {
-                vert.ResetSync();
-                vert.Background = Brushes.Purple;
-            }
+            NewGraphButtonEnabled = true;
+            LoadGraphButtonEnabled = true;
         }
 
         /// <summary>
@@ -363,6 +356,9 @@ namespace SyncPoints
         {
             animationStarted = true;
             OnPropertyChanged("AnimNotStarted");
+            NewGraphButtonEnabled = false;
+            LoadGraphButtonEnabled = false;
+            SaveGraphButtonEnabled = false;
             // Cleaning all paths from the canvas, just in case
             foreach (var item in mainPanel.Children)
             {
@@ -379,18 +375,23 @@ namespace SyncPoints
             isPaused = false;
             Stats = new StatisticsModule(graph);
             StartStopButton.Content = "Stop";
-            foreach (var edge in StartingEdges)
+            int startEdgeCount = 0;
+            foreach (var edge in graph.Edges)
             {
-                DotAnimation anim = AnimateEdge(edge);
-                Stats.VertexStatistics[edge.Source].DotsOut++;
-                if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                ActiveStoryboards.Add(anim.Storyboard);
-                ActivePaths.Add(anim.Path);
+                if (edge.IsStarting)
+                {
+                    startEdgeCount++;
+                    DotAnimation anim = AnimateEdge(edge);
+                    Stats.VertexStatistics[edge.Source].DotsOut++;
+                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                    ActiveStoryboards.Add(anim.Storyboard);
+                    ActivePaths.Add(anim.Path);
+                }
             }
             StartChartReader();
             ChartValues.Clear();
-            ChartValues.Add(new PointValues { PointNumber = StartingEdges.Count, TimeElapsed = TimeSpan.FromSeconds(0) });
+            ChartValues.Add(new PointValues { PointNumber = startEdgeCount, TimeElapsed = TimeSpan.FromSeconds(0) });
         }
 
         /// <summary>
@@ -435,6 +436,9 @@ namespace SyncPoints
             QueuedAnimations.Clear();
             ActiveStoryboards.Clear();
             ActivePaths.Clear();
+            NewGraphButtonEnabled = true;
+            LoadGraphButtonEnabled = true;
+            SaveGraphButtonEnabled = true;
         }
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
@@ -445,7 +449,7 @@ namespace SyncPoints
             //    return;
             //}
             WrongParams.Foreground = Brushes.RoyalBlue;
-            WrongParams.Text = "Generating...";
+            WrongParams.Text = " ";
             //Create data graph object
             graph = new MyGraph();
 
@@ -472,9 +476,9 @@ namespace SyncPoints
             //    if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) StartingEdges.Add(edge);
             //}
             //Create and add vertices
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 10; i++)
             {
-                graph.AddVertex(new SyncVertex(i, rnd.Next(8, 8 + 1)));
+                graph.AddVertex(new SyncVertex(i, rnd.Next(5, 10 + 1)));
             }
 
             var vlist = graph.Vertices.ToList();
@@ -483,26 +487,38 @@ namespace SyncPoints
             {
                 foreach (var item2 in vlist)
                 {
-                    if (item1 != item2 && 1 - rnd.NextDouble() <= 0.35) graph.AddEdge(new WeightedEdge(item1, item2,
+                    if (item1 != item2 && 1 - rnd.NextDouble() <= 0.2) graph.AddEdge(new WeightedEdge(item1, item2,
                         rnd.NextDouble() * (2) + 1));
                 }
             }
-            GenerateLogicCore();
-            StartingEdges.Clear();
             foreach (var edge in graph.Edges)
             {
-                if (1 - rnd.NextDouble() <= 0.8) StartingEdges.Add(edge);
+                if (1 - rnd.NextDouble() <= 0.8) edge.IsStarting = true;
+                else edge.IsStarting = false;
             }
+            InitializeGraphArea();
+        }
+
+        /// <summary>
+        /// Initializes the GraphArea component
+        /// </summary>
+        private void InitializeGraphArea()
+        {
+            GenerateLogicCore();
             graphArea.GenerateGraph(graph, true, true);
             graphGenPanel.Visibility = Visibility.Collapsed;
             graphStatPanel.Visibility = Visibility.Visible;
             createGraph.FontSize = 26;
             createGraph.Text = "Generation finished";
+            createGraph.HorizontalAlignment = HorizontalAlignment.Center;
             Stats = new StatisticsModule(graph);
             InitializeChart();
             statMessage1.Text = "Graph successfully generated";
             statMessagePurple.Text = "";
+            SaveGraphButtonEnabled = true;
         }
+
+        #region Graph stats buttons
 
         private void chartButton_Click(object sender, RoutedEventArgs e)
         {
@@ -518,11 +534,6 @@ namespace SyncPoints
 
         private async void exportStats_Click(object sender, RoutedEventArgs e)
         {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-
-            };
             SaveFileDialog dialog = new SaveFileDialog
             {
                 Filter = "JSON file (*.json)|*.json|Text file (*.txt)|*.txt",
@@ -530,11 +541,107 @@ namespace SyncPoints
             };
             if (dialog.ShowDialog() == true)
             {
-                using (FileStream fs = File.Create(dialog.FileName))
+                try
                 {
-                    await JsonSerializer.SerializeAsync(fs, Stats);
+                    using (FileStream fs = File.Create(dialog.FileName))
+                    {
+                        await JsonSerializer.SerializeAsync(fs, Stats);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
                 }
             }
         }
+        #endregion
+
+        #region Left control panel buttons
+
+        public bool NewGraphButtonEnabled { get => newGraphButtonEnabled; set { newGraphButtonEnabled = value; OnPropertyChanged("NewGraphButtonEnabled"); } }
+        public bool LoadGraphButtonEnabled { get => loadGraphButtonEnabled; set { loadGraphButtonEnabled = value; OnPropertyChanged("LoadGraphButtonEnabled"); } }
+        public bool SaveGraphButtonEnabled { get => saveGraphButtonEnabled; set { saveGraphButtonEnabled = value; OnPropertyChanged("SaveGraphButtonEnabled"); } }
+
+        private void newGraphButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveGraphButtonEnabled = false;
+            Flyout f = FlyoutService.GetFlyout(newGraphButton) as Flyout;
+            f?.Hide();
+            GenerateLogicCore();
+            graphArea.GenerateGraph(null);
+            graphGenPanel.Visibility = Visibility.Visible;
+            graphStatPanel.Visibility = Visibility.Collapsed;
+            createGraph.FontSize = 35;
+            createGraph.Text = "Generate a graph";
+            createGraph.HorizontalAlignment = HorizontalAlignment.Left;
+            Stats = null;
+            graph = null;
+            GraphGenParams = new GraphGenerationParams();
+        }
+
+        private void loadGraphButton_Click(object sender, RoutedEventArgs e)
+        {
+            Flyout f = FlyoutService.GetFlyout(loadGraphButton) as Flyout;
+            f?.Hide();
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "XML file (GraphML Format) (*.xml)|*.xml",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    graph = new BidirectionalGraph<SyncVertex, WeightedEdge>();
+                    using (var xreader = XmlReader.Create(dialog.FileName))
+                    {
+                        graph.DeserializeFromGraphML(xreader, id =>  new SyncVertex(), (source, target, id) => new WeightedEdge(source, target));
+                        foreach (var item in graph.Edges)
+                        {
+                            Console.WriteLine(item.Weight);
+                        }
+                    }
+                    foreach (var vert in graph.Vertices)
+                    {
+                        vert.ResetSync();
+                    }
+                    InitializeGraphArea();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void saveGraphButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "XML file (GraphML Format) (*.xml)|*.xml",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (var xwriter = XmlWriter.Create(dialog.FileName))
+                    {
+                        graph.SerializeToGraphML<SyncVertex, WeightedEdge, BidirectionalGraph<SyncVertex, WeightedEdge>>(xwriter);
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void infoButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        #endregion
     }
 }

@@ -102,7 +102,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DictionarySyncPointsConverter.cs" />
     <Compile Include="DotAnimation.cs" />
     <Compile Include="GraphGenerationParams.cs" />
     <Compile Include="MyGraphArea.cs" />

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Windows.Media;
+using System.Xml.Serialization;
 
 namespace SyncPointsLib
 {
@@ -16,6 +17,7 @@ namespace SyncPointsLib
         /// <summary>
         /// Sync counter
         /// </summary>
+        [JsonIgnore]
         public int Sync
         {
             get => sync;
@@ -29,11 +31,16 @@ namespace SyncPointsLib
         [JsonIgnore]
         public Brush Background { get => background; set { background = value; NotifyPropertyChanged("Background"); } }
 
-        public int InitSync { get; } // Synchronization to reset to 
+        [XmlAttribute("InitSync")]
+        public int InitSync { get; set; } // Synchronization to reset to 
         private int sync;
         private Brush background;
 
-        public SyncVertex() { }
+        public SyncVertex() 
+        {
+            Background = Brushes.OrangeRed;
+            sync = 0;
+        }
 
         public SyncVertex(int id, int sync)
         {
