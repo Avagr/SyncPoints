@@ -13,7 +13,6 @@ using SyncPointsLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -55,6 +54,7 @@ namespace SyncPoints
         private bool newGraphButtonEnabled;
         private bool loadGraphButtonEnabled;
         private bool saveGraphButtonEnabled;
+        private GraphGenerationParams graphGenParams;
 
         public bool AnimNotStarted { get => !animationStarted; }
 
@@ -72,7 +72,7 @@ namespace SyncPoints
             }
         }
 
-        public GraphGenerationParams GraphGenParams { get; set; }
+        public GraphGenerationParams GraphGenParams { get => graphGenParams; set { graphGenParams = value; OnPropertyChanged("GraphGenParams"); } }
 
         public StatisticsModule Stats { get => stats; set { stats = value; OnPropertyChanged("Stats"); } }
 
@@ -686,7 +686,7 @@ namespace SyncPoints
                     graph = new BidirectionalGraph<SyncVertex, WeightedEdge>();
                     using (var xreader = XmlReader.Create(dialog.FileName))
                     {
-                        graph.DeserializeFromGraphML(xreader, id =>  new SyncVertex(), (source, target, id) => new WeightedEdge(source, target));
+                        graph.DeserializeFromGraphML(xreader, id => new SyncVertex(), (source, target, id) => new WeightedEdge(source, target));
                     }
                     foreach (var vert in graph.Vertices)
                     {
