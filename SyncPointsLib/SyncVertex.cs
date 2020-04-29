@@ -24,6 +24,7 @@ namespace SyncPointsLib
             set
             {
                 sync = value;
+                if (sync < 0) Background = Brushes.Purple;
                 NotifyPropertyChanged("Sync");
             }
         }
