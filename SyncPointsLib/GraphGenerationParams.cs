@@ -41,16 +41,9 @@ namespace SyncPointsLib
         }
 
         /// <summary>
-        /// Probability that an edge will be a starting edge
+        /// The string to bind to a textbox
         /// </summary>
-        public double StartingEdgeProbability
-        {
-            get => startingEdgeProbability; set
-            {
-                if (value > 0 && value <= 1) startingEdgeProbability = value;
-                OnPropertyChanged("StartingEdgeProbability");
-            }
-        }
+        public string EdgeProbabilityString { get; set; }
 
         /// <summary>
         /// A lower bound of random synchronization number generation
@@ -144,7 +137,7 @@ namespace SyncPointsLib
         /// </summary>
         public bool CheckIfFilled()
         {
-            if (VertexCount == 0 || EdgeProbability == 0 || StartingEdgeProbability == 0 || SyncLowerBound == 0 || SyncUpperBound == 0 || WeightLowerBound == 0 || WeightUpperBound == 0) return false;
+            if (VertexCount == 0 || EdgeProbabilityString == null || SyncLowerBound == 0 || SyncUpperBound == 0 || WeightLowerBound == 0 || WeightUpperBound == 0) return false;
             return true;
         }
     }

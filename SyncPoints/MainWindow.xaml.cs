@@ -14,6 +14,7 @@ using SyncPointsLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -131,6 +132,7 @@ namespace SyncPoints
             GraphGenParams = new GraphGenerationParams();
             LatticeGenParams = new LatticeGenParams();
             GraphManParams = new GraphManualParams();
+            StartingEdgesBlue = new List<WeightedEdge>();
             InitializeComponent();
             graphArea.LogicCore = GenerateLogicCore();
             ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
@@ -399,8 +401,6 @@ namespace SyncPoints
                 vert.ResetSync();
                 vert.Background = Brushes.OrangeRed;
             }
-            statMessage1.Text = "Animation in progress";
-            statMessagePurple.Text = "";
             isStopping = false;
             isPaused = false;
             Stats = new StatisticsModule(graph);
@@ -408,34 +408,29 @@ namespace SyncPoints
             int startEdgeCount = 0;
             if (DisableDots)
             {
-                foreach (var edge in graph.Edges)
+                foreach (var edge in StartingEdgesBlue)
                 {
-                    if (edge.IsStarting)
-                    {
-                        startEdgeCount++;
-                        Storyboard story = InvisibleAnimateEdge(edge);
-                        Stats.VertexStatistics[edge.Source].DotsOut++;
-                        zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
-                        story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                        ActiveStoryboards.Add(story);
-                    }
+                    startEdgeCount++;
+                    Storyboard story = InvisibleAnimateEdge(edge);
+                    Stats.VertexStatistics[edge.Source].DotsOut++;
+                    zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
+                    story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                    ActiveStoryboards.Add(story);
                 }
             }
             else
             {
-                foreach (var edge in graph.Edges)
+                foreach (var edge in StartingEdgesBlue)
                 {
-                    if (edge.IsStarting)
-                    {
-                        startEdgeCount++;
-                        DotAnimation anim = AnimateEdge(edge);
-                        Stats.VertexStatistics[edge.Source].DotsOut++;
-                        if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                        zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                        anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                        ActiveStoryboards.Add(anim.Storyboard);
-                        ActivePaths.Add(anim.Path);
-                    }
+                    startEdgeCount++;
+                    DotAnimation anim = AnimateEdge(edge);
+                    Stats.VertexStatistics[edge.Source].DotsOut++;
+                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                    anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                    ActiveStoryboards.Add(anim.Storyboard);
+                    ActivePaths.Add(anim.Path);
+
                 }
             }
             StartChartReader();
@@ -509,8 +504,6 @@ namespace SyncPoints
         /// </summary>
         private void HighlightDeadEnds()
         {
-            statMessage1.Text = "Animation finished. Ending vertices have been";
-            statMessagePurple.Text = "highlighted.";
             Stats.FindDeadEnds();
             foreach (var vert in Stats.DeadEndVertices)
             {
@@ -560,6 +553,12 @@ namespace SyncPoints
                 WrongParams.Text = "Invalid parameters. Every field must contain a valid value.";
                 return;
             }
+            if (!ValidateProbability(GraphGenParams.EdgeProbabilityString, out double tempProb))
+            {
+                WrongParams.Text = "Invalid probability format";
+                return;
+            }
+            GraphGenParams.EdgeProbability = tempProb;
             WrongParams.Text = " ";
             //Create data graph object
             graph = new MyGraph();
@@ -581,10 +580,6 @@ namespace SyncPoints
                 }
             }
             GenerateLogicCore();
-            foreach (var edge in graph.Edges)
-            {
-                if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) edge.IsStarting = true;
-            }
             InitializeGraphArea();
         }
 
@@ -758,8 +753,7 @@ namespace SyncPoints
             }
             foreach (var edge in graph.Edges)
             {
-                if (1 - rnd.NextDouble() <= 0.8) edge.IsStarting = true;
-                else edge.IsStarting = false;
+                if (1 - rnd.NextDouble() <= 0.8) StartingEdgesBlue.Add(edge);
             }
         }
 
@@ -786,7 +780,7 @@ namespace SyncPoints
         }
 
         /// <summary>
-        /// Initializes the GraphArea component
+        /// Initializes the GraphArea component and handles transition to selecting the starting edges
         /// </summary>
         private void InitializeGraphArea()
         {
@@ -794,18 +788,185 @@ namespace SyncPoints
             graphGenPanel.Visibility = Visibility.Collapsed;
             latticeGenPanel.Visibility = Visibility.Collapsed;
             graphBuildPanel.Visibility = Visibility.Collapsed;
-            graphStatPanel.Visibility = Visibility.Visible;
-            createGraph.Visibility = Visibility.Visible;
+            graphStatPanel.Visibility = Visibility.Collapsed;
+            titleText.Visibility = Visibility.Visible;
+            startingEdgePanel.Visibility = Visibility.Visible;
             SelectGraphGenMode.Visibility = Visibility.Collapsed;
-            createGraph.FontSize = 26;
-            createGraph.Text = "Generation finished";
-            createGraph.HorizontalAlignment = HorizontalAlignment.Center;
+            SelectedEdge = null;
+            titleText.FontSize = 26;
+            titleText.Text = "Select starting edges";
+            titleText.HorizontalAlignment = HorizontalAlignment.Center;
+            SaveGraphButtonEnabled = true;
+
+        }
+
+
+
+        /// <summary>
+        /// Validates and parses the probability format
+        /// </summary>
+        /// <param name="input"> The string containing the probability</param>
+        /// <param name="probability"> The probability to return</param>
+        /// <returns> True if the probability is valid, false otherwise</returns>
+        public bool ValidateProbability(string input, out double probability)
+        {
+            string[] splitArr = input.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (splitArr.Length == 2 && int.TryParse(splitArr[0], out int num) && int.TryParse(splitArr[1], out int denom) && denom != 0)
+            {
+                probability = (double)num / denom;
+                if (probability <= 1 && probability >= 0) return true;
+            }
+            else if (double.TryParse(input, out probability) && probability <= 1 && probability >= 0) return true;
+            probability = double.NaN;
+            return false;
+        }
+
+        #endregion
+
+        #region Starting edges
+
+        private int timesToAddEdgeA;
+        private int timesToAddEdgeB;
+        private int timesToRemoveEdgeA;
+        private int timesToRemoveEdgeB;
+        private WeightedEdge selectedEdge;
+
+        public List<WeightedEdge> StartingEdgesBlue { get; set; } // Edges that will contain a blue point at the start of the animation
+
+        public List<WeightedEdge> StartingEdgesGreen { get; set; } // Edges that will contain a green point at the start of the animation
+
+        public string StartingEdgeProbabilityString { get; set; }
+
+        public WeightedEdge SelectedEdge { get => selectedEdge; set { selectedEdge = value; OnPropertyChanged("SelectedEdge"); } } // Last clicked edge
+
+        public int TimesToAddEdgeA { get => timesToAddEdgeA; set { if (value > 0) timesToAddEdgeA = value; OnPropertyChanged("TimesToAddEdgeA"); } }
+        public int TimesToAddEdgeB { get => timesToAddEdgeB; set { if (value > 0) timesToAddEdgeB = value; OnPropertyChanged("TimesToAddEdgeB"); } }
+        public int TimesToRemoveEdgeA { get => timesToRemoveEdgeA; set { if (value > 0) timesToRemoveEdgeA = value; OnPropertyChanged("TimesToRemoveEdgeA"); } }
+        public int TimesToRemoveEdgeB { get => timesToRemoveEdgeB; set { if (value > 0) timesToRemoveEdgeB = value; OnPropertyChanged("TimesToRemoveEdgeB"); } }
+
+        private void GenerateStartingEdges_Click(object sender, RoutedEventArgs e)
+        {
+            if (StartingEdgeProbabilityString != null && ValidateProbability(StartingEdgeProbabilityString, out double probability))
+            {
+                foreach (var edge in graph.Edges)
+                {
+                    if (1 - rnd.NextDouble() <= probability)
+                        if (rnd.Next(2) == 0)
+                        {
+                            StartingEdgesBlue.Add(edge);
+                            edge.BlueDotsCount++;
+                        }
+                        else
+                        {
+                            StartingEdgesGreen.Add(edge);
+                            edge.GreenDotsCount++;
+                        }
+                }
+                startingEdgePanel.Visibility = Visibility.Collapsed;
+                graphStatPanel.Visibility = Visibility.Visible;
+                Stats = new StatisticsModule(graph);
+                InitializeChart();
+                mainPanel.IsHitTestVisible = false;
+                WrongSEParams.Text = "";
+                titleText.Text = "";
+            }
+            else WrongSEParams.Text = "Invalid probability format";
+        }
+
+        private void graphArea_EdgeSelected(object sender, GraphX.Controls.Models.EdgeSelectedEventArgs args)
+        {
+            if (SelectedEdge != null) graphArea.EdgesList[SelectedEdge].Foreground = Brushes.Black;
+            SelectedEdge = (WeightedEdge)args.EdgeControl.Edge;
+            args.EdgeControl.Foreground = Brushes.Red;
+        }
+
+        private void FinishStartingEdges_Click(object sender, RoutedEventArgs e)
+        {
+            startingEdgePanel.Visibility = Visibility.Collapsed;
+            graphStatPanel.Visibility = Visibility.Visible;
             Stats = new StatisticsModule(graph);
             InitializeChart();
-            statMessage1.Text = "Graph successfully created";
-            statMessagePurple.Text = "";
-            SaveGraphButtonEnabled = true;
             mainPanel.IsHitTestVisible = false;
+            WrongSEParams.Text = "";
+            titleText.Text = "";
+        }
+
+        private async void exportEdges_Click(object sender, RoutedEventArgs e)
+        {
+            var edgeList = new List<StartingEdgeParams>();
+            foreach (var edge in graph.Edges)
+            {
+                edgeList.Add(new StartingEdgeParams(edge.ID, edge.BlueDotsCount, edge.GreenDotsCount));
+            }
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "JSON file (*.json)|*.json|Text file (*.txt)|*.txt",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (FileStream fs = File.Create(dialog.FileName))
+                    {
+                        await JsonSerializer.SerializeAsync(fs, edgeList);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// An auxiliary class for serializing starting edges
+        /// </summary>
+        private class StartingEdgeParams
+        {
+            public StartingEdgeParams() { }
+
+            public StartingEdgeParams(long iD, int blueDotsCount, int greenDotsCount)
+            {
+                ID = iD;
+                BlueDotsCount = blueDotsCount;
+                GreenDotsCount = greenDotsCount;
+            }
+
+            public long ID { get; set; }
+
+            public int BlueDotsCount { get; set; }
+
+            public int GreenDotsCount { get; set; }
+        }
+
+        private async void importEdges_Click(object sender, RoutedEventArgs e)
+        {
+            var edgeList = new List<StartingEdgeParams>();
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "JSON file (*.json)|*.json|Text file (*.txt)|*.txt",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (FileStream fs = File.OpenRead(dialog.FileName))
+                    {
+                        edgeList = await JsonSerializer.DeserializeAsync<List<StartingEdgeParams>>(fs);
+                    }
+                    foreach (var edge in graph.Edges)
+                    {
+                        edge.BlueDotsCount = edgeList[(int)edge.ID - 1].BlueDotsCount;
+                        edge.GreenDotsCount = edgeList[(int)edge.ID - 1].GreenDotsCount;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Looks like something went wrong with " + ex.Message);
+                }
+            }
         }
 
         #endregion
@@ -842,7 +1003,7 @@ namespace SyncPoints
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Looks like something went wrong with " + ex.Message);
                 }
             }
         }
@@ -866,13 +1027,16 @@ namespace SyncPoints
             graphStatPanel.Visibility = Visibility.Collapsed;
             graphBuildPanel.Visibility = Visibility.Collapsed;
             latticeGenPanel.Visibility = Visibility.Collapsed;
-            createGraph.Visibility = Visibility.Collapsed;
+            titleText.Visibility = Visibility.Collapsed;
+            startingEdgePanel.Visibility = Visibility.Collapsed;
             SelectGraphGenMode.SelectedIndex = 0;
             SelectGraphGenMode.Visibility = Visibility.Visible;
             Stats = null;
+            SelectedEdge = null;
             GraphGenParams = new GraphGenerationParams();
             LatticeGenParams = new LatticeGenParams();
             GraphManParams = new GraphManualParams();
+            mainPanel.IsHitTestVisible = true;
         }
 
         private void loadGraphButton_Click(object sender, RoutedEventArgs e)
@@ -901,7 +1065,7 @@ namespace SyncPoints
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Looks like something went wrong with " + ex.Message);
                 }
             }
         }
@@ -925,7 +1089,7 @@ namespace SyncPoints
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Looks like something went wrong with " + ex.Message);
                 }
             }
         }

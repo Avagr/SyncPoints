@@ -83,9 +83,6 @@ namespace SyncPointsLib
         public LatticeGenParams()
         {
             PolygonEdgeNum = 3;
-            HorizontalTileCount = 10;
-            VerticalTileCount = 3;
-            SyncLowerBound = SyncUpperBound = 4;
         }
 
         protected virtual void OnPropertyChanged(string propertyName = null)
