@@ -98,6 +98,8 @@
   <ItemGroup>
     <Compile Include="DotAnimation.cs" />
     <Compile Include="GraphGenerationParams.cs" />
+    <Compile Include="GraphManualParams.cs" />
+    <Compile Include="LatticeGenParams.cs" />
     <Compile Include="MyGraphArea.cs" />
     <Compile Include="MyGraph.cs" />
     <Compile Include="MyGXLogicCore.cs" />

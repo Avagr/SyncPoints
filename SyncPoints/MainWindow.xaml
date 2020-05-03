@@ -1,337 +1,673 @@
-﻿<Window x:Class="SyncPoints.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SyncPoints"
-        xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib"
-        xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
-        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
-        mc:Ignorable="d" Name="thisWindow"
-        xmlns:ui="http://schemas.modernwpf.com/2019"
-        ui:WindowHelper.UseModernWindowStyle="True"
-        ui:ThemeManager.RequestedTheme="Light"
-        ui:TitleBar.Background="RoyalBlue"
-        ui:TitleBar.Foreground="White"
-        Title="SyncPoints" ui:TitleBar.IsBackEnabled="True" Height="700" Width="1200" MinHeight="700" MinWidth="1010" WindowStartupLocation="CenterScreen">
+﻿<Window x:Class="SyncPoints.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls" xmlns:local="clr-namespace:SyncPoints" xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib" xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:ui="http://schemas.modernwpf.com/2019" Name="thisWindow" Title="SyncPoints"
+        Width="1200" Height="700" MinWidth="1010" MinHeight="700"
+        ui:ThemeManager.RequestedTheme="Light" ui:TitleBar.Background="RoyalBlue" ui:TitleBar.Foreground="White" ui:TitleBar.IsBackEnabled="True"
+        ui:WindowHelper.UseModernWindowStyle="True" WindowStartupLocation="CenterScreen" mc:Ignorable="d">
     <Window.Resources>
-        <Style TargetType="graphxctrl:ZoomControl" x:Key="zoomSlider">
+        <Style x:Key="zoomSlider" TargetType="graphxctrl:ZoomControl">
             <Style.Resources>
-                <Style TargetType="Slider" >
-                    <Setter Property="Background" Value="Transparent"/>
+                <Style TargetType="Slider">
+                    <Setter Property="Background" Value="Transparent" />
                 </Style>
             </Style.Resources>
         </Style>
         <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Yu Gothic UI"/>
+            <Setter Property="FontFamily" Value="Yu Gothic UI" />
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+            <EventSetter Event="KeyUp" Handler="TextBox_KeyEnterUpdate" />
         </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="10*"/>
-            <RowDefinition Height="10"/>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="10*" />
+            <RowDefinition Height="10" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.5*"/>
-            <ColumnDefinition Width="7*"/>
-            <ColumnDefinition Width="13*"/>
-            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="1.5*" />
+            <ColumnDefinition Width="7*" />
+            <ColumnDefinition Width="13*" />
+            <ColumnDefinition Width="10" />
         </Grid.ColumnDefinitions>
-        <graphxctrl:ZoomControl x:Name="zoomcontrol" Grid.Row="1" Grid.Column="2" BorderThickness="3" BorderBrush="RoyalBlue"
-                                MaxZoom="2.5" MinZoom="0.2" Style="{StaticResource zoomSlider}">
-            <Canvas x:Name="mainPanel" IsHitTestVisible="False" Height="1000" Width="1000">
-                <locallib:MyGraphArea x:Name="graphArea"/>
-            </Canvas>
-        </graphxctrl:ZoomControl>
-        <StackPanel Orientation="Horizontal" Grid.Column="2" HorizontalAlignment="Center">
+        <TextBlock x:Name="createGraph" Grid.Column="1" Margin="15,0" HorizontalAlignment="Left"
+                   VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="35" FontWeight="DemiBold"
+                   Foreground="RoyalBlue" TextWrapping="Wrap" Visibility="Collapsed">
+            Generate a graph
+        </TextBlock>
+        <Border Grid.Row="1" Grid.Column="2" BorderBrush="RoyalBlue" BorderThickness="3">
+            <graphxctrl:ZoomControl x:Name="zoomcontrol" MaxZoom="2.5" MinZoom="0.2" Style="{StaticResource zoomSlider}">
+                <Canvas x:Name="mainPanel" Width="1000" Height="1000" IsHitTestVisible="True">
+                    <locallib:MyGraphArea x:Name="graphArea" />
+                    <locallib:MyGraphArea x:Name="buildGraphArea" EdgeSelected="buildGraphArea_EdgeSelected" VertexSelected="buildGraphArea_VertexSelected" />
+                </Canvas>
+            </graphxctrl:ZoomControl>
+        </Border>
+        <StackPanel Grid.Column="2" HorizontalAlignment="Center" Orientation="Horizontal">
             <StackPanel.Resources>
                 <Style TargetType="{x:Type StackPanel}">
-                    <Setter Property="Margin" Value="10,0,0,0"/>
+                    <Setter Property="Margin" Value="10,0,0,0" />
                 </Style>
             </StackPanel.Resources>
-            <Button x:Name="resumeButton" Click="resumeButton_Click"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    VerticalAlignment="Stretch" Margin="5">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform" Margin="6"/>
+            <Button x:Name="resumeButton"
+                    Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                    Margin="5" VerticalAlignment="Stretch" Background="RoyalBlue" Click="resumeButton_Click"
+                    Foreground="White">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform" />
                 </Grid>
             </Button>
-            <Button x:Name="pauseButton" Click="pauseButton_Click"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White" Stretch="Uniform" Margin="6"/>
+            <Button x:Name="pauseButton"
+                    Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                    Margin="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="RoyalBlue"
+                    Click="pauseButton_Click" Foreground="White">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White" Stretch="Uniform" />
                 </Grid>
             </Button>
             <StackPanel>
-                <TextBlock HorizontalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="RoyalBlue" FontFamily="Yu Gothic UI" Text="{Binding AnimationSpeedText}" />
-                <Slider x:Name="speedSlider" VerticalAlignment="Center" Width="150" Style="{StaticResource DefaultSliderStyle}" TickPlacement="Both" MinHeight="50"
-                         Minimum="-5" Maximum="5" ValueChanged="speedSlider_ValueChanged" Value="{Binding AnimationSpeed}" IsMoveToPointEnabled="True"/>
+                <TextBlock HorizontalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="13" FontWeight="SemiBold"
+                           Foreground="RoyalBlue"
+                           Text="{Binding AnimationSpeedText}" />
+                <Slider x:Name="speedSlider" Width="150" MinHeight="50" VerticalAlignment="Center"
+                        IsMoveToPointEnabled="True" Maximum="5" Minimum="-5"
+                        Style="{StaticResource DefaultSliderStyle}"
+                        TickPlacement="Both" ValueChanged="speedSlider_ValueChanged"
+                        Value="{Binding AnimationSpeed}" />
             </StackPanel>
         </StackPanel>
-        <TextBlock Grid.Column="1" x:Name="createGraph" FontFamily="Yu Gothic UI" FontSize="35" FontWeight="DemiBold" TextWrapping="Wrap"
-                   HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="RoyalBlue" Margin="15,0">Generate a graph</TextBlock>
-        <Button x:Name="TestDot" Click="TestDot_Click" Visibility="Visible" Height="0"/>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphGenPanel" Visibility="Visible" Margin="15,0">
+        <StackPanel x:Name="graphBuildPanel" Grid.Row="1" Grid.Column="1" Margin="15,0"
+                    Visibility="Collapsed">
+            <Button x:Name="AddVertexButton" Width="200" Margin="15,10,0,5" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" FontSize="20"
+                    FontWeight="DemiBold" Foreground="White">
+                Add vertex
+                <ui:FlyoutService.Flyout>
+                    <ui:Flyout>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="20"
+                                       FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                                Sync number:
+                            </TextBlock>
+                            <TextBox Width="90" Height="30" Margin="10,0,10,0" Text="{Binding GraphManParams.CreateVertexSync}" />
+                            <Button Margin="0" HorizontalAlignment="Right" VerticalAlignment="Center" Background="RoyalBlue"
+                                    BorderThickness="2" Click="AddVertexButton_Click" FontSize="15" FontWeight="DemiBold"
+                                    Foreground="White">
+                                Add
+                            </Button>
+                        </StackPanel>
+                    </ui:Flyout>
+                </ui:FlyoutService.Flyout>
+            </Button>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                Note that the sync number must be a positive integer.
+            </TextBlock>
+            <Border Margin="15,10,0,5" BorderBrush="RoyalBlue" BorderThickness="2.5" CornerRadius="15">
+                <StackPanel>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="25"
+                               FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                        Selected vertex
+                    </TextBlock>
+                    <TextBlock Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Yu Gothic UI"
+                               FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                        <Run Text="ID: " />
+                        <Run Text="{Binding GraphManParams.SelectedVertex.ID}" />
+                    </TextBlock>
+                    <StackPanel Margin="5" Orientation="Horizontal">
+                        <TextBlock Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Yu Gothic UI"
+                                   FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                            Sync number:
+                        </TextBlock>
+                        <TextBox Width="145" Margin="20,0,0,0" Text="{Binding GraphManParams.SelectedVertex.InitSync, Mode=TwoWay}" />
+                    </StackPanel>
+                    <Button x:Name="RemoveVertexButton" Margin="0,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Background="RoyalBlue" BorderThickness="2" Click="RemoveVertexButton_Click" FontSize="15"
+                            FontWeight="DemiBold" Foreground="White">
+                        Delete
+                    </Button>
+                </StackPanel>
+            </Border>
+            <Button x:Name="AddEdgeButton" Width="200" Margin="15,10,0,5" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" FontSize="20"
+                    FontWeight="DemiBold" Foreground="White">
+                Add edge
+                <ui:FlyoutService.Flyout>
+                    <ui:Flyout>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto" />
+                                <ColumnDefinition Width="auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                                       TextWrapping="Wrap">
+                                Source vertex ID:
+                            </TextBlock>
+                            <TextBox Grid.Row="0" Grid.Column="1" Width="90" Height="30"
+                                     Margin="10,0,10,0"
+                                     Text="{Binding GraphManParams.CreateEdgeSourceID}" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                                       TextWrapping="Wrap">
+                                Target vertex ID:
+                            </TextBlock>
+                            <TextBox Grid.Row="1" Grid.Column="1" Width="90" Height="30"
+                                     Margin="10,0,10,0"
+                                     Text="{Binding GraphManParams.CreateEdgeTargetID}" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                                       TextWrapping="Wrap">
+                                Weight:
+                            </TextBlock>
+                            <TextBox Grid.Row="2" Grid.Column="1" Width="90" Height="30"
+                                     Margin="10,0,10,0"
+                                     Text="{Binding GraphManParams.CreateEdgeWeight}" />
+                            <Button Grid.Row="3" Grid.ColumnSpan="2" Margin="0" HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" Click="AddEdgeButton_Click"
+                                    FontSize="15" FontWeight="DemiBold" Foreground="White">
+                                Add
+                            </Button>
+                        </Grid>
+                    </ui:Flyout>
+                </ui:FlyoutService.Flyout>
+            </Button>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                Note that the source and target vertices must have different IDs and edge weight must be positive. Parallel edges are not allowed.
+            </TextBlock>
+            <Border Margin="15,10,0,5" BorderBrush="RoyalBlue" BorderThickness="2.5" CornerRadius="15">
+                <StackPanel>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="25"
+                               FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                        Selected edge
+                    </TextBlock>
+                    <TextBlock Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Yu Gothic UI"
+                               FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                        <Run Text="ID: " />
+                        <Run Text="{Binding GraphManParams.SelectedEdge.ID}" />
+                    </TextBlock>
+                    <StackPanel Margin="5" Orientation="Horizontal">
+                        <TextBlock Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Yu Gothic UI"
+                                   FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                            Weight:
+                        </TextBlock>
+                        <TextBox Width="200" Margin="20,0,0,0" Text="{Binding GraphManParams.SelectedEdge.Weight, Mode=TwoWay}" />
+                    </StackPanel>
+                    <Button x:Name="RemoveEdgeButton" Margin="0,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Background="RoyalBlue" BorderThickness="2" Click="RemoveEdgeButton_Click" FontSize="15"
+                            FontWeight="DemiBold" Foreground="White">
+                        Delete
+                    </Button>
+                </StackPanel>
+            </Border>
+            <Button x:Name="FinishBuilding" Width="300" Margin="15,15,0,0" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" Click="FinishBuilding_Click"
+                    FontSize="25" FontWeight="DemiBold" Foreground="White">
+                Finish
+            </Button>
+        </StackPanel>
+        <StackPanel x:Name="latticeGenPanel" Grid.Row="1" Grid.Column="1" Margin="15,0"
+                    Orientation="Vertical" Visibility="Collapsed">
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                       FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                Tile shape:
+            </TextBlock>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                Select the shape of lattice's tile
+            </TextBlock>
+            <ui:RadioButtons x:Name="SelectLatticeNum" SelectedIndex="0" SelectionChanged="SelectLatticeNum_SelectionChanged">
+                <TextBlock VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="15" FontWeight="SemiBold"
+                           Foreground="RoyalBlue">
+                    Triangular
+                </TextBlock>
+                <TextBlock FontFamily="Yu Gothic UI" FontSize="15" FontWeight="SemiBold" Foreground="RoyalBlue">
+                    Square
+                </TextBlock>
+            </ui:RadioButtons>
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Margin="0,17,0,0" HorizontalAlignment="Left"
+                       VerticalAlignment="Bottom" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
+                       Foreground="RoyalBlue">
+                Number of tiles horizontally:
+            </TextBlock>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                Horizontal dimensions of the lattice graph. NOTE: during the generation and layout calculations the graph will be rotated, this parameter is just for easier configuration.
+            </TextBlock>
+            <TextBox Grid.Row="2" Grid.ColumnSpan="3" Width="300" Height="30"
+                     Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" BorderBrush="RoyalBlue"
+                     Text="{Binding LatticeGenParams.HorizontalTileCount, Mode=TwoWay}" />
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Margin="0,17,0,0" HorizontalAlignment="Left"
+                       VerticalAlignment="Bottom" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
+                       Foreground="RoyalBlue">
+                Number of tiles vertically:
+            </TextBlock>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                Vertical dimensions of the lattice graph.  NOTE: during the generation and layout calculations the graph will be rotated, this parameter is just for easier configuration.
+            </TextBlock>
+            <TextBox Grid.Row="2" Grid.ColumnSpan="3" Width="300" Height="30"
+                     Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" BorderBrush="RoyalBlue"
+                     Text="{Binding LatticeGenParams.VerticalTileCount, Mode=TwoWay}" />
+            <CheckBox Grid.Row="1" Margin="0,15,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                      FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
+                      IsChecked="{Binding LatticeGenParams.CreateBorderCascade}"
+                      TextBlock.Foreground="RoyalBlue">
+                <TextBlock>Create a downwards cascade at the border</TextBlock>
+            </CheckBox>
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="4" Margin="0,10,0,0" HorizontalAlignment="Left"
+                       VerticalAlignment="Bottom" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
+                       Foreground="RoyalBlue">
+                Synchronization number bounds:
+            </TextBlock>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="4" HorizontalAlignment="Left" VerticalAlignment="Top"
+                       FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                       TextWrapping="Wrap">
+                The lower and upper bound of random synchronization number generation
+            </TextBlock>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    from
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.Column="1" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding LatticeGenParams.SyncLowerBound, Mode=TwoWay}" />
+                <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    to
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.Column="3" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding LatticeGenParams.SyncUpperBound, Mode=TwoWay}" />
+            </StackPanel>
+            <TextBlock x:Name="WrongLatticeParams" Grid.Row="5" Margin="0,10,0,0" HorizontalAlignment="Left"
+                       VerticalAlignment="Top" Foreground="Red" TextWrapping="Wrap" />
+            <Button x:Name="GenerateLatticeGraph" Width="300" HorizontalAlignment="Left" VerticalAlignment="Center"
+                    Background="RoyalBlue" BorderThickness="2" Click="GenerateLatticeGraph_Click" FontSize="25"
+                    FontWeight="DemiBold" Foreground="White">
+                Generate
+            </Button>
+        </StackPanel>
+        <Grid x:Name="graphGenPanel" Grid.Row="1" Grid.Column="1" Margin="15,0"
+              Visibility="Visible">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.3*" />
                 </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="3" Grid.Row="0" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
-                   HorizontalAlignment="Left"  Foreground="RoyalBlue" >Number of vertices:</TextBlock>
-                <TextBlock VerticalAlignment="Top" Grid.ColumnSpan="3" Grid.Row="1" FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic"
-                   HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="DarkGray">How many vertices will the program generate</TextBlock>
-                <TextBox VerticalAlignment="Center" Grid.ColumnSpan="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="0,0,0,0" Text="{Binding GraphGenParams.VertexCount, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Number of vertices:
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                           TextWrapping="Wrap">
+                    How many vertices will the program generate
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.ColumnSpan="3" Height="30" Margin="0,0,0,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.VertexCount, Mode=TwoWay}" />
             </Grid>
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.3*" />
                 </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="3" Grid.Row="0" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
-                   HorizontalAlignment="Left"  Foreground="RoyalBlue" >Edge probability:</TextBlock>
-                <TextBlock VerticalAlignment="Top" Grid.ColumnSpan="3" Grid.Row="1" FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic"
-                   HorizontalAlignment="Left" TextWrapping="Wrap"  Foreground="DarkGray">The probability that an edge will be generated from each vertex to all others</TextBlock>
-                <TextBox VerticalAlignment="Center" Grid.ColumnSpan="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                   Height="30" Margin="0,0,0,0" Text="{Binding GraphGenParams.EdgeProbability, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Edge probability:
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                           TextWrapping="Wrap">
+                    The probability that an edge will be generated from each vertex to all others
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.ColumnSpan="3" Height="30" Margin="0,0,0,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.EdgeProbability, Mode=TwoWay}" />
             </Grid>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.5*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.5*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.3*" />
                 </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="3" Grid.Row="0" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
-                   HorizontalAlignment="Left"  Foreground="RoyalBlue" >Starting edge probability:</TextBlock>
-                <TextBlock VerticalAlignment="Top" Grid.ColumnSpan="3" Grid.Row="1" FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic"
-                   HorizontalAlignment="Left" TextWrapping="Wrap"  Foreground="DarkGray">The probability that an edge will contain a point at the beginning</TextBlock>
-                <TextBox VerticalAlignment="Center" Grid.ColumnSpan="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="0,0,0,0" Text="{Binding GraphGenParams.StartingEdgeProbability, Mode=TwoWay}"  TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Starting edge probability:
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                           TextWrapping="Wrap">
+                    The probability that an edge will contain a point at the beginning
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.ColumnSpan="3" Height="30" Margin="0,0,0,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.StartingEdgeProbability, Mode=TwoWay}" />
             </Grid>
             <Grid Grid.Row="3">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.25*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.1*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.2*"/>
+                    <ColumnDefinition Width="0.25*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.1*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.2*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.3*" />
                 </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="4" Grid.Row="0" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
-                   HorizontalAlignment="Left"  Foreground="RoyalBlue" >Synchronization number bounds:</TextBlock>
-                <TextBlock VerticalAlignment="Center"  Grid.Row="2" Grid.Column="0" FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold"
-                   HorizontalAlignment="Center"  Foreground="RoyalBlue" >from</TextBlock>
-                <TextBlock VerticalAlignment="Center"  Grid.Row="2" Grid.Column="2" FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold"
-                   HorizontalAlignment="Center"  Foreground="RoyalBlue" >to</TextBlock>
-                <TextBlock VerticalAlignment="Top" Grid.ColumnSpan="4" Grid.Row="1" FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic"
-                   HorizontalAlignment="Left" TextWrapping="Wrap"  Foreground="DarkGray">The lower and upper bound of random synchronization number generation</TextBlock>
-                <TextBox VerticalAlignment="Center" Grid.Column="1" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="10,0,10,0" Text="{Binding GraphGenParams.SyncLowerBound, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
-                <TextBox VerticalAlignment="Center" Grid.Column="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="10,0,10,0" Text="{Binding GraphGenParams.SyncUpperBound, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="4" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Synchronization number bounds:
+                </TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    from
+                </TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    to
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="4" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                           TextWrapping="Wrap">
+                    The lower and upper bound of random synchronization number generation
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.Column="1" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.SyncLowerBound, Mode=TwoWay}" />
+                <TextBox Grid.Row="2" Grid.Column="3" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.SyncUpperBound, Mode=TwoWay}" />
             </Grid>
             <Grid Grid.Row="4">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.25*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.1*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0.2*"/>
+                    <ColumnDefinition Width="0.25*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.1*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.2*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.25*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.25*" />
+                    <RowDefinition Height="0.3*" />
                 </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="4" Grid.Row="0" FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold"
-                   HorizontalAlignment="Left"  Foreground="RoyalBlue" >Edge weight bounds:</TextBlock>
-                <TextBlock VerticalAlignment="Center"  Grid.Row="2" Grid.Column="0" FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold"
-                   HorizontalAlignment="Center"  Foreground="RoyalBlue" >from</TextBlock>
-                <TextBlock VerticalAlignment="Center"  Grid.Row="2" Grid.Column="2" FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold"
-                   HorizontalAlignment="Center"  Foreground="RoyalBlue" >to</TextBlock>
-                <TextBlock VerticalAlignment="Top" Grid.ColumnSpan="4" Grid.Row="1" FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic"
-                   HorizontalAlignment="Left" TextWrapping="Wrap"  Foreground="DarkGray">The lower and upper bound of random edge weight generation</TextBlock>
-                <TextBox VerticalAlignment="Center" Grid.Column="1" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="10,0,10,0" Text="{Binding GraphGenParams.WeightLowerBound, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
-                <TextBox VerticalAlignment="Center" Grid.Column="3" Grid.Row="2" MaxLength="5" BorderBrush="RoyalBlue" GotFocus="TextBox_LostFocus"
-                    Height="30" Margin="10,0,10,0" Text="{Binding GraphGenParams.WeightUpperBound, Mode=TwoWay}" TextChanged="CheckGenButton" LostFocus="TextBox_LostFocus"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="4" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Edge weight bounds:
+                </TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    from
+                </TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    to
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="4" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           FontFamily="Yu Gothic UI" FontSize="12" FontStyle="Italic" Foreground="DarkGray"
+                           TextWrapping="Wrap">
+                    The lower and upper bound of random edge weight generation
+                </TextBlock>
+                <TextBox Grid.Row="2" Grid.Column="1" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.WeightLowerBound, Mode=TwoWay}" />
+                <TextBox Grid.Row="2" Grid.Column="3" Height="30" Margin="10,0,10,0"
+                         VerticalAlignment="Center" BorderBrush="RoyalBlue" MaxLength="5"
+                         Text="{Binding GraphGenParams.WeightUpperBound, Mode=TwoWay}" />
             </Grid>
-            <TextBlock Grid.Row="5" x:Name="WrongParams" VerticalAlignment="Top" HorizontalAlignment="Center" Foreground="Red" Margin="0,5,0,50" TextWrapping="Wrap"/>
-            <Button Grid.Row="5" HorizontalAlignment="Left" VerticalAlignment="Center" Width="300" FontSize="25"  x:Name="GenerateGraphButton" Click="GenerateGraphButton_Click"
-                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Generate</Button>
+            <TextBlock x:Name="WrongParams" Grid.Row="5" Margin="0,5,0,50" HorizontalAlignment="Left"
+                       VerticalAlignment="Top" Foreground="Red" TextWrapping="Wrap" />
+            <Button x:Name="GenerateGraphButton" Grid.Row="5" Width="300" HorizontalAlignment="Left"
+                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" Click="GenerateGraphButton_Click"
+                    FontSize="25" FontWeight="DemiBold" Foreground="White">
+                Generate
+            </Button>
         </Grid>
-        <Grid Grid.Row="1" Grid.Column="1" x:Name="graphStatPanel" Visibility="Collapsed">
+        <Grid x:Name="graphStatPanel" Grid.Row="1" Grid.Column="1" Visibility="Collapsed">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="0.4*"/>
-                <RowDefinition Height="0.4*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="5*"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="0.4*" />
+                <RowDefinition Height="0.4*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="5*" />
             </Grid.RowDefinitions>
-            <TextBlock FontFamily="Yu Gothic UI" FontSize="30" FontWeight="DemiBold" TextWrapping="Wrap"
-                   HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="RoyalBlue">Parameters:</TextBlock>
-            <CheckBox Grid.Row="1" HorizontalAlignment="Center" IsChecked="{Binding UseSandpileModel}" FontSize="15" Foreground="RoyalBlue" Content="Use sandpile model" FontFamily="Yu Gothic UI" FontWeight="DemiBold" IsEnabled="{Binding AnimNotStarted}"/>
-            <CheckBox Grid.Row="2" HorizontalAlignment="Center" IsChecked="{Binding DisableDots}" FontSize="15" Foreground="RoyalBlue" Content="Disable point animations to save performance" FontFamily="Yu Gothic UI" FontWeight="DemiBold" IsEnabled="{Binding AnimNotStarted}"/>
-            <Button Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" Width="250" FontSize="30"  x:Name="StartStopButton" Click="StartStopButton_Click"
-                    FontWeight="DemiBold" Foreground="White" Background="RoyalBlue" BorderThickness="2">Start</Button>
-            <Grid Grid.Row="4" >
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="30"
+                       FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                Parameters:
+            </TextBlock>
+            <CheckBox Grid.Row="1" HorizontalAlignment="Center" Content="Use sandpile model" FontFamily="Yu Gothic UI"
+                      FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
+                      IsChecked="{Binding UseSandpileModel}"
+                      IsEnabled="{Binding AnimNotStarted}" />
+            <CheckBox Grid.Row="2" HorizontalAlignment="Center" Content="Disable point animations to save performance" FontFamily="Yu Gothic UI"
+                      FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
+                      IsChecked="{Binding DisableDots}"
+                      IsEnabled="{Binding AnimNotStarted}" />
+            <Button x:Name="StartStopButton" Grid.Row="3" Width="250" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Background="RoyalBlue" BorderThickness="2" Click="StartStopButton_Click"
+                    FontSize="30" FontWeight="DemiBold" Foreground="White">
+                Start
+            </Button>
+            <Grid Grid.Row="4">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="0.7*"/>
-                    <RowDefinition Height="0.7*"/>
-                    <RowDefinition Height="0.7*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="0.7*" />
+                    <RowDefinition Height="0.7*" />
+                    <RowDefinition Height="0.7*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <TextBlock Foreground="RoyalBlue" FontSize="30" FontWeight="DemiBold" HorizontalAlignment="Center">Statistics:</TextBlock>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="1">
-                    <Run Text="Total points created: "/>
-                    <Run Text="{Binding Stats.DotCount, Mode=TwoWay}"/>
+                <TextBlock HorizontalAlignment="Center" FontSize="30" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    Statistics:
                 </TextBlock>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="2">
-                        <Run Text="Active points: "/>
-                        <Run Text="{Binding Stats.CurrentDotCount, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="1" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    <Run Text="Total points created: " />
+                    <Run Text="{Binding Stats.DotCount, Mode=TwoWay}" />
                 </TextBlock>
-                <Button x:Name="chartButton" Click="chartButton_Click" Grid.Row="2"  Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="5">
-                    <Grid Width="{Binding ElementName=chartButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=chartButton, Path=ActualHeight}">
-                        <Path Data="M4 19V20H22V22H2V2H4V17C7 17 10 15 12.1 11.4C15.1 6.4 18.4 4 22 4V6C19.2 6 16.5 8.1 13.9 12.5C11.3 16.6 7.7 19 4 19Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                <TextBlock Grid.Row="2" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    <Run Text="Active points: " />
+                    <Run Text="{Binding Stats.CurrentDotCount, Mode=TwoWay}" />
+                </TextBlock>
+                <Button x:Name="chartButton" Grid.Row="2"
+                        Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                        Margin="5" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="RoyalBlue"
+                        Click="chartButton_Click" Foreground="White">
+                    <Grid Width="{Binding ElementName=chartButton, Path=ActualHeight}"
+                          Height="{Binding ElementName=chartButton, Path=ActualHeight}"
+                          Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Path Margin="6" Data="M4 19V20H22V22H2V2H4V17C7 17 10 15 12.1 11.4C15.1 6.4 18.4 4 22 4V6C19.2 6 16.5 8.1 13.9 12.5C11.3 16.6 7.7 19 4 19Z" Fill="White" Stretch="Uniform" />
                     </Grid>
                 </Button>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="3">
-                        <Run Text="Total distance travelled: "/>
-                        <Run Text="{Binding Stats.DistanceTravelled, Mode=TwoWay, StringFormat=F4}"/>
+                <TextBlock Grid.Row="3" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue">
+                    <Run Text="Total distance travelled: " />
+                    <Run Text="{Binding Stats.DistanceTravelled, Mode=TwoWay, StringFormat=F4}" />
                 </TextBlock>
-                <TextBlock Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="4" TextWrapping="Wrap" Name="statMessage" HorizontalAlignment="Left" >
-                        <Run Text="" x:Name="statMessage1"/>
-                        <Run Text="" Foreground="Purple" x:Name="statMessagePurple"/>
+                <TextBlock Name="statMessage" Grid.Row="4" HorizontalAlignment="Left" FontSize="20"
+                           FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
+                    <Run x:Name="statMessage1" Text="" />
+                    <Run x:Name="statMessagePurple" Foreground="Purple" Text="" />
                 </TextBlock>
-                <StackPanel Grid.Row="5" Orientation="Horizontal" >
-                    <Button x:Name="viewVertexStats" Click="viewVertexStats_Click" Height="45"   Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="5">
-                        <Grid Width="{Binding ElementName=viewVertexStats, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                            Height="{Binding ElementName=viewVertexStats, Path=ActualHeight}">
-                            <Path Data="M12,5.37L11.56,5.31L6,14.9C6.24,15.11 6.4,15.38 6.47,15.68H17.53C17.6,15.38 17.76,15.11 18,14.9L12.44,5.31L12,5.37M6.6,16.53L10.88,19.06C11.17,18.79 11.57,18.63 12,18.63C12.43,18.63 12.83,18.79 13.12,19.06L17.4,16.53H6.6M12,22A1.68,1.68 0 0,1 10.32,20.32L10.41,19.76L6.11,17.21C5.8,17.57 5.35,17.79 4.84,17.79A1.68,1.68 0 0,1 3.16,16.11C3.16,15.32 3.69,14.66 4.42,14.47V9.36C3.59,9.25 2.95,8.54 2.95,7.68A1.68,1.68 0 0,1 4.63,6C5.18,6 5.66,6.26 5.97,6.66L10.38,4.13L10.32,3.68C10.32,2.75 11.07,2 12,2C12.93,2 13.68,2.75 13.68,3.68L13.62,4.13L18.03,6.66C18.34,6.26 18.82,6 19.37,6A1.68,1.68 0 0,1 21.05,7.68C21.05,8.54 20.41,9.25 19.58,9.36V14.47C20.31,14.66 20.84,15.32 20.84,16.11A1.68,1.68 0 0,1 19.16,17.79C18.65,17.79 18.2,17.57 17.89,17.21L13.59,19.76L13.68,20.32A1.68,1.68 0 0,1 12,22M10.8,4.86L6.3,7.44L6.32,7.68C6.32,8.39 5.88,9 5.26,9.25L5.29,14.5L10.8,4.86M13.2,4.86L18.71,14.5L18.74,9.25C18.12,9 17.68,8.39 17.68,7.68L17.7,7.44L13.2,4.86Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                <StackPanel Grid.Row="5" Orientation="Horizontal">
+                    <Button x:Name="viewVertexStats"
+                            Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                            Height="45" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                            Background="RoyalBlue" Click="viewVertexStats_Click" Foreground="White">
+                        <Grid Width="{Binding ElementName=viewVertexStats, Path=ActualHeight}"
+                              Height="{Binding ElementName=viewVertexStats, Path=ActualHeight}"
+                              Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Margin="6" Data="M12,5.37L11.56,5.31L6,14.9C6.24,15.11 6.4,15.38 6.47,15.68H17.53C17.6,15.38 17.76,15.11 18,14.9L12.44,5.31L12,5.37M6.6,16.53L10.88,19.06C11.17,18.79 11.57,18.63 12,18.63C12.43,18.63 12.83,18.79 13.12,19.06L17.4,16.53H6.6M12,22A1.68,1.68 0 0,1 10.32,20.32L10.41,19.76L6.11,17.21C5.8,17.57 5.35,17.79 4.84,17.79A1.68,1.68 0 0,1 3.16,16.11C3.16,15.32 3.69,14.66 4.42,14.47V9.36C3.59,9.25 2.95,8.54 2.95,7.68A1.68,1.68 0 0,1 4.63,6C5.18,6 5.66,6.26 5.97,6.66L10.38,4.13L10.32,3.68C10.32,2.75 11.07,2 12,2C12.93,2 13.68,2.75 13.68,3.68L13.62,4.13L18.03,6.66C18.34,6.26 18.82,6 19.37,6A1.68,1.68 0 0,1 21.05,7.68C21.05,8.54 20.41,9.25 19.58,9.36V14.47C20.31,14.66 20.84,15.32 20.84,16.11A1.68,1.68 0 0,1 19.16,17.79C18.65,17.79 18.2,17.57 17.89,17.21L13.59,19.76L13.68,20.32A1.68,1.68 0 0,1 12,22M10.8,4.86L6.3,7.44L6.32,7.68C6.32,8.39 5.88,9 5.26,9.25L5.29,14.5L10.8,4.86M13.2,4.86L18.71,14.5L18.74,9.25C18.12,9 17.68,8.39 17.68,7.68L17.7,7.44L13.2,4.86Z" Fill="White" Stretch="Uniform" />
                         </Grid>
                     </Button>
-                    <TextBlock VerticalAlignment="Center" Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="4" TextWrapping="Wrap">View vertex statistics</TextBlock>
+                    <TextBlock Grid.Row="4" VerticalAlignment="Center" FontSize="20" FontWeight="DemiBold"
+                               Foreground="RoyalBlue" TextWrapping="Wrap">
+                        View vertex statistics
+                    </TextBlock>
                 </StackPanel>
-                <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button x:Name="exportStats" Click="exportStats_Click"  Height="45"   Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="5">
-                        <Grid Width="{Binding ElementName=viewVertexStats, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                            Height="{Binding ElementName=viewVertexStats, Path=ActualHeight}">
-                            <Path Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z" Fill="White" Stretch="Uniform" Margin="6"/>
+                <StackPanel Grid.Row="6" HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button x:Name="exportStats"
+                            Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                            Height="45" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                            Background="RoyalBlue" Click="exportStats_Click" Foreground="White">
+                        <Grid Width="{Binding ElementName=viewVertexStats, Path=ActualHeight}"
+                              Height="{Binding ElementName=viewVertexStats, Path=ActualHeight}"
+                              Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Margin="6" Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z" Fill="White" Stretch="Uniform" />
                         </Grid>
                     </Button>
-                    <TextBlock VerticalAlignment="Center" Foreground="RoyalBlue" FontSize="20" FontWeight="DemiBold" Grid.Row="4" TextWrapping="Wrap">Export statistics to JSON</TextBlock>
+                    <TextBlock Grid.Row="4" VerticalAlignment="Center" FontSize="20" FontWeight="DemiBold"
+                               Foreground="RoyalBlue" TextWrapping="Wrap">
+                        Export statistics to JSON
+                    </TextBlock>
                 </StackPanel>
             </Grid>
         </Grid>
-        <StackPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,9">
-            <Button x:Name="newGraphButton"  Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    VerticalAlignment="Stretch" HorizontalAlignment="Center" IsEnabled="{Binding NewGraphButtonEnabled}">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" Stretch="Uniform" Margin="6"/>
+        <StackPanel Grid.Row="1" Margin="0,9" VerticalAlignment="Top">
+            <Button x:Name="newGraphButton"
+                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="RoyalBlue" Foreground="White"
+                    IsEnabled="{Binding NewGraphButtonEnabled}">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" Stretch="Uniform" />
                 </Grid>
                 <ui:FlyoutService.Flyout>
                     <ui:Flyout>
                         <StackPanel>
-                            <TextBlock
-                                    Style="{StaticResource BaseTextBlockStyle}"
-                                    Foreground="RoyalBlue"
-                                    Text="The current graph will be removed"
-                                    Margin="0,0,0,12" />
-                            <Button HorizontalAlignment="Center"
-                                    Click="newGraphButton_Click"
-                                    Background="RoyalBlue" Foreground="White"
-                                    Content="Proceed" />
+                            <TextBlock Margin="0,0,0,12" Foreground="RoyalBlue" Style="{StaticResource BaseTextBlockStyle}" Text="The current graph will be removed" />
+                            <Button HorizontalAlignment="Center" Background="RoyalBlue" Click="newGraphButton_Click" Content="Proceed"
+                                    Foreground="White" />
                         </StackPanel>
                     </ui:Flyout>
                 </ui:FlyoutService.Flyout>
             </Button>
-            <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="RoyalBlue" Margin="0,0,0,10" IsEnabled="{Binding NewGraphButtonEnabled}">New graph</TextBlock>
-            <Button x:Name="loadGraphButton"   Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    VerticalAlignment="Stretch" HorizontalAlignment="Center" IsEnabled="{Binding LoadGraphButtonEnabled}">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z" Fill="White" Stretch="Uniform" Margin="6"/>
+            <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold"
+                       Foreground="RoyalBlue"
+                       IsEnabled="{Binding NewGraphButtonEnabled}">
+                New graph
+            </TextBlock>
+            <Button x:Name="loadGraphButton"
+                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="RoyalBlue" Foreground="White"
+                    IsEnabled="{Binding LoadGraphButtonEnabled}">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z" Fill="White" Stretch="Uniform" />
                 </Grid>
                 <ui:FlyoutService.Flyout>
                     <ui:Flyout>
                         <StackPanel>
-                            <TextBlock
-                                    Style="{StaticResource BaseTextBlockStyle}"
-                                    Foreground="RoyalBlue"
-                                    Text="The current graph will be removed"
-                                    Margin="0,0,0,12" />
-                            <Button HorizontalAlignment="Center"
-                                    Click="loadGraphButton_Click"
-                                    Background="RoyalBlue" Foreground="White"
-                                    Content="Proceed" />
+                            <TextBlock Margin="0,0,0,12" Foreground="RoyalBlue" Style="{StaticResource BaseTextBlockStyle}" Text="The current graph will be removed" />
+                            <Button HorizontalAlignment="Center" Background="RoyalBlue" Click="loadGraphButton_Click" Content="Proceed"
+                                    Foreground="White" />
                         </StackPanel>
                     </ui:Flyout>
                 </ui:FlyoutService.Flyout>
             </Button>
-            <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="RoyalBlue" Margin="0,0,0,10" IsEnabled="{Binding LoadGraphButtonEnabled}">Load graph</TextBlock>
-            <Button x:Name="saveGraphButton" Click="saveGraphButton_Click"  Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                    VerticalAlignment="Stretch" HorizontalAlignment="Center" IsEnabled="{Binding SaveGraphButtonEnabled}">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M17 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V7L17 3M19 19H5V5H16.17L19 7.83V19M12 12C10.34 12 9 13.34 9 15S10.34 18 12 18 15 16.66 15 15 13.66 12 12 12M6 6H15V10H6V6Z" Fill="White" Stretch="Uniform" Margin="6"/>
+            <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold"
+                       Foreground="RoyalBlue"
+                       IsEnabled="{Binding LoadGraphButtonEnabled}">
+                Load graph
+            </TextBlock>
+            <Button x:Name="saveGraphButton"
+                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="RoyalBlue" Click="saveGraphButton_Click"
+                    Foreground="White"
+                    IsEnabled="{Binding SaveGraphButtonEnabled}">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M17 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V7L17 3M19 19H5V5H16.17L19 7.83V19M12 12C10.34 12 9 13.34 9 15S10.34 18 12 18 15 16.66 15 15 13.66 12 12 12M6 6H15V10H6V6Z" Fill="White" Stretch="Uniform" />
                 </Grid>
             </Button>
-            <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="RoyalBlue" Margin="0,0,0,10" >Save graph</TextBlock>
+            <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold"
+                       Foreground="RoyalBlue">
+                Save graph
+            </TextBlock>
 
         </StackPanel>
-        <StackPanel Grid.Row="1" VerticalAlignment="Bottom" Margin="0,5">
-            <Button x:Name="infoButton" Click="infoButton_Click"   Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Foreground="White" Background="RoyalBlue"
-                     HorizontalAlignment="Center">
-                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-6"
-                         Height="{Binding ElementName=resumeButton, Path=ActualHeight}">
-                    <Path Data="M10,19H13V22H10V19M12,2C17.35,2.22 19.68,7.62 16.5,11.67C15.67,12.67 14.33,13.33 13.67,14.17C13,15 13,16 13,17H10C10,15.33 10,13.92 10.67,12.92C11.33,11.92 12.67,11.33 13.5,10.67C15.92,8.43 15.32,5.26 12,5A3,3 0 0,0 9,8H6A6,6 0 0,1 12,2Z" Fill="White" Stretch="Uniform" Margin="6"/>
+        <StackPanel Grid.Row="1" Margin="0,5" VerticalAlignment="Bottom">
+            <Button x:Name="infoButton"
+                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
+                    HorizontalAlignment="Center" Background="RoyalBlue" Click="infoButton_Click" Foreground="White">
+                <Grid Width="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Height="{Binding ElementName=resumeButton, Path=ActualHeight}"
+                      Margin="-6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Margin="6" Data="M10,19H13V22H10V19M12,2C17.35,2.22 19.68,7.62 16.5,11.67C15.67,12.67 14.33,13.33 13.67,14.17C13,15 13,16 13,17H10C10,15.33 10,13.92 10.67,12.92C11.33,11.92 12.67,11.33 13.5,10.67C15.92,8.43 15.32,5.26 12,5A3,3 0 0,0 9,8H6A6,6 0 0,1 12,2Z" Fill="White" Stretch="Uniform" />
                 </Grid>
             </Button>
-            <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="RoyalBlue"  >Info</TextBlock>
+            <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="RoyalBlue">
+                Info
+            </TextBlock>
         </StackPanel>
+        <ComboBox x:Name="SelectGraphGenMode" Grid.Column="1" Width="300" Margin="20,0"
+                  HorizontalAlignment="Left" VerticalAlignment="Center" SelectedIndex="0" SelectionChanged="SelectGraphGenMode_SelectionChanged">
+            <ComboBoxItem>
+                <TextBlock FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                           Text="Random graph generation" TextWrapping="Wrap" />
+            </ComboBoxItem>
+            <ComboBoxItem>
+                <TextBlock FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                           Text="Create a graph manually" TextWrapping="Wrap" />
+            </ComboBoxItem>
+            <ComboBoxItem>
+                <TextBlock FontFamily="Yu Gothic UI" FontSize="20" FontWeight="DemiBold" Foreground="RoyalBlue"
+                           Text="Generate a lattice graph" TextWrapping="Wrap" />
+            </ComboBoxItem>
+        </ComboBox>
+        <Button x:Name="TestDot" Click="TestDot_Click" Visibility="Visible" />
     </Grid>
 </Window>

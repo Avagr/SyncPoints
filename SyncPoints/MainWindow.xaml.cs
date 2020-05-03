@@ -1,4 +1,5 @@
 ﻿using GraphX.Controls;
+using GraphX.PCL.Common;
 using GraphX.PCL.Common.Enums;
 using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.PCL.Logic.Algorithms.OverlapRemoval;
@@ -20,6 +21,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Xml;
@@ -33,6 +36,8 @@ namespace SyncPoints
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        #region Fields and properties
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         private const double ExpConst = 0.321888; // A constant for speed transformations
@@ -54,7 +59,6 @@ namespace SyncPoints
         private bool newGraphButtonEnabled;
         private bool loadGraphButtonEnabled;
         private bool saveGraphButtonEnabled;
-        private GraphGenerationParams graphGenParams;
 
         public bool AnimNotStarted { get => !animationStarted; }
 
@@ -72,14 +76,17 @@ namespace SyncPoints
             }
         }
 
-        public GraphGenerationParams GraphGenParams { get => graphGenParams; set { graphGenParams = value; OnPropertyChanged("GraphGenParams"); } }
-
+        /// <summary>
+        /// The statistics module for the current simulation
+        /// </summary>
         public StatisticsModule Stats { get => stats; set { stats = value; OnPropertyChanged("Stats"); } }
 
         protected virtual void OnPropertyChanged(string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        #endregion
 
         #region Charting
 
@@ -122,7 +129,10 @@ namespace SyncPoints
             QueuedAnimations = new List<DotAnimation>();
             AnimationSpeed = 0;
             GraphGenParams = new GraphGenerationParams();
+            LatticeGenParams = new LatticeGenParams();
+            GraphManParams = new GraphManualParams();
             InitializeComponent();
+            graphArea.LogicCore = GenerateLogicCore();
             ZoomControl.SetViewFinderVisibility(zoomcontrol, Visibility.Collapsed);
             ThemeManager.Current.AccentColor = Colors.RoyalBlue;
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
@@ -130,33 +140,12 @@ namespace SyncPoints
             LoadGraphButtonEnabled = true;
         }
 
-        /// <summary>
-        /// Generates a logic core for the graph
-        /// </summary>
-        private void GenerateLogicCore()
-        {
-            var LogicCore = new MyGXLogicCore
-            {
-                DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK
-            };
-            LogicCore.DefaultLayoutAlgorithmParams =
-                               LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.KK);
-            ((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 1000;
-            LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
-            LogicCore.DefaultOverlapRemovalAlgorithmParams =
-                              LogicCore.AlgorithmFactory.CreateOverlapRemovalParameters(OverlapRemovalAlgorithmTypeEnum.FSA);
-            ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).HorizontalGap = 50;
-            ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).VerticalGap = 50;
-            LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
-            LogicCore.AsyncAlgorithmCompute = false;
-            graphArea.LogicCore = LogicCore;
-        }
-
         private void TestDot_Click(object sender, RoutedEventArgs e)
         {
-            NewGraphButtonEnabled = true;
-            LoadGraphButtonEnabled = true;
+            buildGraphArea.GenerateGraph(new BidirectionalGraph<SyncVertex, WeightedEdge>());
         }
+
+        #region Edge animation
 
         /// <summary>
         /// Animates a single edge of the graph
@@ -325,33 +314,7 @@ namespace SyncPoints
             return (new DotAnimation(animStoryboard, dotPath));
         }
 
-        /// <summary>
-        /// Highlights the dead ends of the graph
-        /// </summary>
-        private void HighlightDeadEnds()
-        {
-            statMessage1.Text = "Animation finished. Ending vertices have been";
-            statMessagePurple.Text = "highlighted.";
-            Stats.FindDeadEnds();
-            foreach (var vert in Stats.DeadEndVertices)
-            {
-                vert.Background = Brushes.Purple;
-            }
-        }
-
-        /// <summary>
-        /// Checks whether the animation limit is exceeded
-        /// </summary>
-        private void CheckDotCount(object obj, EventArgs args)
-        {
-            if (Stats.CurrentDotCount > 2000 && !DisableDots || Stats.CurrentDotCount > 4000)
-            {
-                animationStarted = !animationStarted;
-                OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
-                StopAnimation();
-                MessageBox.Show("The animation had to be terminated due to an extremely high amount of dots on screen. Consider disabling the animations to save performace.");
-            }
-        }
+        #endregion
 
         #region Animation Control Panel
 
@@ -400,15 +363,7 @@ namespace SyncPoints
 
         #endregion
 
-        #region Checking textbox validity - not needed right now
-        private void CheckGenButton(object sender, TextChangedEventArgs e)
-        {
-        }
-
-        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-        }
-        #endregion
+        #region Animation starting and stopping
 
         private void StartStopButton_Click(object sender, RoutedEventArgs e)
         {
@@ -461,6 +416,7 @@ namespace SyncPoints
                         Storyboard story = InvisibleAnimateEdge(edge);
                         Stats.VertexStatistics[edge.Source].DotsOut++;
                         zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
+                        story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
                         ActiveStoryboards.Add(story);
                     }
                 }
@@ -476,6 +432,7 @@ namespace SyncPoints
                         Stats.VertexStatistics[edge.Source].DotsOut++;
                         if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
                         zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
                         ActiveStoryboards.Add(anim.Storyboard);
                         ActivePaths.Add(anim.Path);
                     }
@@ -493,6 +450,20 @@ namespace SyncPoints
         {
             IsReading = true;
             Task.Factory.StartNew(Read);
+        }
+
+        /// <summary>
+        /// Checks whether the animation limit is exceeded
+        /// </summary>
+        private void CheckDotCount(object obj, EventArgs args)
+        {
+            if (Stats.CurrentDotCount > 2000 && !DisableDots || Stats.CurrentDotCount > 4000)
+            {
+                animationStarted = !animationStarted;
+                OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
+                StopAnimation();
+                MessageBox.Show("The animation had to be terminated due to an extremely high amount of dots on screen. Consider disabling the animations to save performace.");
+            }
         }
 
         /// <summary>
@@ -533,6 +504,55 @@ namespace SyncPoints
             SaveGraphButtonEnabled = true;
         }
 
+        /// <summary>
+        /// Highlights the dead ends of the graph
+        /// </summary>
+        private void HighlightDeadEnds()
+        {
+            statMessage1.Text = "Animation finished. Ending vertices have been";
+            statMessagePurple.Text = "highlighted.";
+            Stats.FindDeadEnds();
+            foreach (var vert in Stats.DeadEndVertices)
+            {
+                vert.Background = Brushes.Purple;
+            }
+        }
+
+        #endregion
+
+        #region Graph generation
+
+        private GraphGenerationParams graphGenParams;
+        private LatticeGenParams latticeGenParams;
+        private GraphManualParams graphManParams;
+
+        public GraphGenerationParams GraphGenParams { get => graphGenParams; set { graphGenParams = value; OnPropertyChanged("GraphGenParams"); } }
+        public LatticeGenParams LatticeGenParams { get => latticeGenParams; set { latticeGenParams = value; OnPropertyChanged("LatticeGenParams"); } }
+        public GraphManualParams GraphManParams { get => graphManParams; set { graphManParams = value; OnPropertyChanged("GraphManParams"); } }
+
+        private void SelectGraphGenMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            graphGenPanel.Visibility = Visibility.Collapsed;
+            graphBuildPanel.Visibility = Visibility.Collapsed;
+            latticeGenPanel.Visibility = Visibility.Collapsed;
+            if (buildGraphArea.LogicCore == null) buildGraphArea.LogicCore = GenerateLogicCore();
+            buildGraphArea.Visibility = Visibility.Collapsed;
+            switch (SelectGraphGenMode.SelectedIndex)
+            {
+                case 0: graphGenPanel.Visibility = Visibility.Visible; break;
+                case 1:
+                    buildGraphArea.Visibility = Visibility.Visible;
+                    graphBuildPanel.Visibility = Visibility.Visible; break;
+                case 2: latticeGenPanel.Visibility = Visibility.Visible; break;
+            }
+        }
+
+        private void SelectLatticeNum_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SelectLatticeNum.SelectedIndex == 0) LatticeGenParams.PolygonEdgeNum = 3;
+            else LatticeGenParams.PolygonEdgeNum = 4;
+        }
+
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
             if (!GraphGenParams.CheckIfFilled())
@@ -540,7 +560,6 @@ namespace SyncPoints
                 WrongParams.Text = "Invalid parameters. Every field must contain a valid value.";
                 return;
             }
-            WrongParams.Foreground = Brushes.RoyalBlue;
             WrongParams.Text = " ";
             //Create data graph object
             graph = new MyGraph();
@@ -566,28 +585,204 @@ namespace SyncPoints
             {
                 if (1 - rnd.NextDouble() <= GraphGenParams.StartingEdgeProbability) edge.IsStarting = true;
             }
-            //Create and add vertices
-            //for (int i = 0; i < 15; i++)
-            //{
-            //    graph.AddVertex(new SyncVertex(i, rnd.Next(3, 5 + 1)));
-            //}
-
-            //var vlist = graph.Vertices.ToList();
-            ////Generate random edges for the vertices
-            //foreach (var item1 in vlist)
-            //{
-            //    foreach (var item2 in vlist)
-            //    {
-            //        if (item1 != item2 && 1 - rnd.NextDouble() <= 0.4) graph.AddEdge(new WeightedEdge(item1, item2,
-            //            rnd.NextDouble() * (2) + 1));
-            //    }
-            //}
-            //foreach (var edge in graph.Edges)
-            //{
-            //    if (1 - rnd.NextDouble() <= 0.8) edge.IsStarting = true;
-            //    else edge.IsStarting = false;
-            //}
             InitializeGraphArea();
+        }
+
+        private void GenerateLatticeGraph_Click(object sender, RoutedEventArgs e)
+        {
+            if (!LatticeGenParams.CheckIfFilled())
+            {
+                WrongLatticeParams.Text = "Invalid parameters. Every field must contain a valid value.";
+                return;
+            }
+            WrongLatticeParams.Text = " ";
+            int v = LatticeGenParams.VerticalTileCount;
+            int h = LatticeGenParams.HorizontalTileCount;
+            graph = new BidirectionalGraph<SyncVertex, WeightedEdge>();
+            SyncVertex[,] lattice = new SyncVertex[v + 1, h + 1];
+            if (LatticeGenParams.PolygonEdgeNum == 3)
+            {
+                for (int i = 0; i < lattice.GetLength(0); i++)
+                {
+                    for (int j = 0; j < lattice.GetLength(1) - i; j++)
+                    {
+                        lattice[i, j] = new SyncVertex(i + j, rnd.Next(LatticeGenParams.SyncLowerBound, LatticeGenParams.SyncUpperBound + 1));
+                        graph.AddVertex(lattice[i, j]);
+                        if (i != 0)
+                        {
+                            if (rnd.Next(2) == 0) graph.AddEdge(new WeightedEdge(lattice[i, j], lattice[i - 1, j], 1.5));
+                            else graph.AddEdge(new WeightedEdge(lattice[i - 1, j], lattice[i, j], 1.5));
+                            if (rnd.Next(2) == 0) graph.AddEdge(new WeightedEdge(lattice[i - 1, j + 1], lattice[i, j], 1.5));
+                            else graph.AddEdge(new WeightedEdge(lattice[i, j], lattice[i - 1, j + 1], 1.5));
+                        }
+                        if (j != 0)
+                        {
+                            if (rnd.Next(2) == 0) graph.AddEdge(new WeightedEdge(lattice[i, j], lattice[i, j - 1], 1.5));
+                            else graph.AddEdge(new WeightedEdge(lattice[i, j - 1], lattice[i, j], 1.5));
+                        }
+                    }
+                }
+            }
+            else if (LatticeGenParams.PolygonEdgeNum == 4)
+            {
+                for (int i = 0; i < lattice.GetLength(0); i++)
+                {
+                    for (int j = 0; j < lattice.GetLength(1); j++)
+                    {
+                        lattice[i, j] = new SyncVertex(i + j, rnd.Next(LatticeGenParams.SyncLowerBound, LatticeGenParams.SyncUpperBound + 1));
+                        graph.AddVertex(lattice[i, j]);
+                        if (i != 0)
+                        {
+                            if (rnd.Next(2) == 0) graph.AddEdge(new WeightedEdge(lattice[i, j], lattice[i - 1, j], 1.5));
+                            else graph.AddEdge(new WeightedEdge(lattice[i - 1, j], lattice[i, j], 1.5));
+                        }
+                        if (j != 0)
+                        {
+                            if (rnd.Next(2) == 0) graph.AddEdge(new WeightedEdge(lattice[i, j], lattice[i, j - 1], 1.5));
+                            else graph.AddEdge(new WeightedEdge(lattice[i, j - 1], lattice[i, j], 1.5));
+                        }
+                    }
+                }
+            }
+            else throw new NotImplementedException("WHAT?");
+            int vertindex = graph.VertexCount;
+            int compNumber; // Number to compare the amount of edges to
+            if (LatticeGenParams.CreateBorderCascade)
+            {
+                if (LatticeGenParams.PolygonEdgeNum == 3) compNumber = 6;
+                else compNumber = 4;
+                foreach (var vert in graph.Vertices.ToList())
+                {
+                    if (graph.GetAllEdges(vert).Count() < compNumber)
+                    {
+                        var cascvert = new SyncVertex(vertindex, 1);
+                        cascvert.Background = Brushes.Transparent;
+                        graph.AddVertex(cascvert);
+                        graph.AddEdge(new WeightedEdge(vert, cascvert, 0.1));
+                    }
+                }
+            }
+            InitializeGraphArea();
+        }
+
+        #region Manual Generation
+
+        private void AddVertexButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (GraphManParams.CreateVertexSync <= 0) return;
+            GraphManParams.Graph.AddVertex(new SyncVertex(GraphManParams.nextVertexId, GraphManParams.CreateVertexSync));
+            GraphManParams.nextVertexId++;
+            buildGraphArea.GenerateGraph(GraphManParams.Graph);
+        }
+
+        private void buildGraphArea_VertexSelected(object sender, GraphX.Controls.Models.VertexSelectedEventArgs args)
+        {
+            if (GraphManParams.SelectedVertex != null) GraphManParams.SelectedVertex.Background = Brushes.OrangeRed;
+            GraphManParams.SelectedVertex = (SyncVertex)args.VertexControl.Vertex;
+            ((SyncVertex)args.VertexControl.Vertex).Background = Brushes.Blue;
+        }
+
+        private void buildGraphArea_EdgeSelected(object sender, GraphX.Controls.Models.EdgeSelectedEventArgs args)
+        {
+            if (GraphManParams.SelectedEdge != null) buildGraphArea.EdgesList[GraphManParams.SelectedEdge].Foreground = Brushes.Black;
+            GraphManParams.SelectedEdge = (WeightedEdge)args.EdgeControl.Edge;
+            args.EdgeControl.Foreground = Brushes.Red;
+        }
+
+        private void AddEdgeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var g = GraphManParams.Graph;
+            var source = (from v in g.Vertices where v.ID == GraphManParams.CreateEdgeSourceID select v).SingleOrDefault();
+            var target = (from v in g.Vertices where v.ID == GraphManParams.CreateEdgeTargetID select v).SingleOrDefault();
+            if (source != null && target != null && source != target && GraphManParams.CreateEdgeWeight > 0 && !g.ContainsEdge(source, target))
+            {
+                g.AddEdge(new WeightedEdge(source, target, GraphManParams.CreateEdgeWeight));
+                buildGraphArea.GenerateGraph(GraphManParams.Graph);
+            }
+        }
+
+        private void RemoveVertexButton_Click(object sender, RoutedEventArgs e)
+        {
+            buildGraphArea.RemoveVertexAndEdges(GraphManParams.SelectedVertex, EdgesType.All, true, true);
+            GraphManParams.SelectedVertex = null;
+        }
+
+        private void RemoveEdgeButton_Click(object sender, RoutedEventArgs e)
+        {
+            buildGraphArea.RemoveEdge(GraphManParams.SelectedEdge, true);
+            GraphManParams.SelectedEdge = null;
+        }
+
+        private void TextBox_KeyEnterUpdate(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                TextBox tBox = (TextBox)sender;
+                DependencyProperty prop = TextBox.TextProperty;
+
+                BindingExpression binding = BindingOperations.GetBindingExpression(tBox, prop);
+                if (binding != null) { binding.UpdateSource(); }
+            }
+        }
+
+        private void FinishBuilding_Click(object sender, RoutedEventArgs e)
+        {
+            if (GraphManParams.SelectedVertex != null) GraphManParams.SelectedVertex.Background = Brushes.OrangeRed;
+            graph = GraphManParams.Graph.Clone();
+            buildGraphArea.GenerateGraph(null, true, true);
+            buildGraphArea.Visibility = Visibility.Collapsed;
+            InitializeGraphArea();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Generates a test graph for debugging purposes. Should not be used in a finished application
+        /// </summary>
+        private void GenerateTestGraph()
+        {
+            for (int i = 0; i < 15; i++)
+            {
+                graph.AddVertex(new SyncVertex(i, rnd.Next(3, 5 + 1)));
+            }
+
+            var vlist = graph.Vertices.ToList();
+            //Generate random edges for the vertices
+            foreach (var item1 in vlist)
+            {
+                foreach (var item2 in vlist)
+                {
+                    if (item1 != item2 && 1 - rnd.NextDouble() <= 0.4) graph.AddEdge(new WeightedEdge(item1, item2,
+                        rnd.NextDouble() * (2) + 1));
+                }
+            }
+            foreach (var edge in graph.Edges)
+            {
+                if (1 - rnd.NextDouble() <= 0.8) edge.IsStarting = true;
+                else edge.IsStarting = false;
+            }
+        }
+
+        /// <summary>
+        /// Generates the logic core dor the graph
+        /// </summary>
+        private MyGXLogicCore GenerateLogicCore()
+        {
+            var LogicCore = new MyGXLogicCore
+            {
+                DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK
+            };
+            //LogicCore.DefaultLayoutAlgorithmParams =
+            //                   LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.KK);
+            //((KKLayoutParameters)LogicCore.DefaultLayoutAlgorithmParams).MaxIterations = 1000;
+            LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
+            LogicCore.DefaultOverlapRemovalAlgorithmParams =
+                              LogicCore.AlgorithmFactory.CreateOverlapRemovalParameters(OverlapRemovalAlgorithmTypeEnum.FSA);
+            ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).HorizontalGap = 50;
+            ((OverlapRemovalParameters)LogicCore.DefaultOverlapRemovalAlgorithmParams).VerticalGap = 50;
+            LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+            LogicCore.AsyncAlgorithmCompute = false;
+            return LogicCore;
         }
 
         /// <summary>
@@ -595,19 +790,25 @@ namespace SyncPoints
         /// </summary>
         private void InitializeGraphArea()
         {
-            GenerateLogicCore();
             graphArea.GenerateGraph(graph, true, true);
             graphGenPanel.Visibility = Visibility.Collapsed;
+            latticeGenPanel.Visibility = Visibility.Collapsed;
+            graphBuildPanel.Visibility = Visibility.Collapsed;
             graphStatPanel.Visibility = Visibility.Visible;
+            createGraph.Visibility = Visibility.Visible;
+            SelectGraphGenMode.Visibility = Visibility.Collapsed;
             createGraph.FontSize = 26;
             createGraph.Text = "Generation finished";
             createGraph.HorizontalAlignment = HorizontalAlignment.Center;
             Stats = new StatisticsModule(graph);
             InitializeChart();
-            statMessage1.Text = "Graph successfully generated";
+            statMessage1.Text = "Graph successfully created";
             statMessagePurple.Text = "";
             SaveGraphButtonEnabled = true;
+            mainPanel.IsHitTestVisible = false;
         }
+
+        #endregion
 
         #region Graph stats buttons
 
@@ -658,16 +859,20 @@ namespace SyncPoints
             SaveGraphButtonEnabled = false;
             Flyout f = FlyoutService.GetFlyout(newGraphButton) as Flyout;
             f?.Hide();
-            GenerateLogicCore();
-            graphArea.GenerateGraph(null);
+            graph = new BidirectionalGraph<SyncVertex, WeightedEdge>();
+            graphArea.GenerateGraph(graph, true, true);
+            buildGraphArea.GenerateGraph(graph, true, true);
             graphGenPanel.Visibility = Visibility.Visible;
             graphStatPanel.Visibility = Visibility.Collapsed;
-            createGraph.FontSize = 35;
-            createGraph.Text = "Generate a graph";
-            createGraph.HorizontalAlignment = HorizontalAlignment.Left;
+            graphBuildPanel.Visibility = Visibility.Collapsed;
+            latticeGenPanel.Visibility = Visibility.Collapsed;
+            createGraph.Visibility = Visibility.Collapsed;
+            SelectGraphGenMode.SelectedIndex = 0;
+            SelectGraphGenMode.Visibility = Visibility.Visible;
             Stats = null;
-            graph = null;
             GraphGenParams = new GraphGenerationParams();
+            LatticeGenParams = new LatticeGenParams();
+            GraphManParams = new GraphManualParams();
         }
 
         private void loadGraphButton_Click(object sender, RoutedEventArgs e)
@@ -728,6 +933,7 @@ namespace SyncPoints
         private void infoButton_Click(object sender, RoutedEventArgs e)
         {
         }
+
         #endregion
     }
 }

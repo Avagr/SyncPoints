@@ -1,10 +1,10 @@
 ﻿using QuickGraph;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Windows.Media;
 
 namespace SyncPointsLib
 {
@@ -62,7 +62,7 @@ namespace SyncPointsLib
             VertexStatistics = new Dictionary<SyncVertex, VertexData>();
             foreach (var vert in graph.Vertices)
             {
-                VertexStatistics.Add(vert, new VertexData(vert.InitSync));
+                if (vert.Background != Brushes.Transparent) VertexStatistics.Add(vert, new VertexData(vert.InitSync));
             }
             DeadEndVertices = new List<SyncVertex>();
         }

@@ -2,6 +2,9 @@
 
 namespace SyncPointsLib
 {
+    /// <summary>
+    /// Parameter for randomly generating a graph
+    /// </summary>
     public class GraphGenerationParams : INotifyPropertyChanged
     {
         private int vertexCount;

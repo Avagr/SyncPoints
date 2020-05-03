@@ -20,24 +20,25 @@ namespace SyncPointsLib
         [JsonIgnore]
         public int Sync
         {
-            get => sync;
+            get => Background == Brushes.Transparent ? 0 : sync;
             set
             {
                 sync = value;
                 if (sync < 0) Background = Brushes.Purple;
-                NotifyPropertyChanged("Sync");
+                OnPropertyChanged("Sync");
             }
         }
 
         [JsonIgnore]
-        public Brush Background { get => background; set { background = value; NotifyPropertyChanged("Background"); } }
+        public Brush Background { get => background; set { background = value; OnPropertyChanged("Background"); } }
 
         [XmlAttribute("InitSync")]
-        public int InitSync { get; set; } // Synchronization to reset to 
+        public int InitSync { get => initSync; set { initSync = value; Sync = value; OnPropertyChanged("InitSync"); OnPropertyChanged("Sync"); } } // Synchronization to reset to 
         private int sync;
         private Brush background;
+        private int initSync;
 
-        public SyncVertex() 
+        public SyncVertex()
         {
             Background = Brushes.OrangeRed;
             sync = 0;
@@ -62,12 +63,9 @@ namespace SyncPointsLib
             Sync = InitSync;
         }
 
-        public override string ToString()
-        {
-            return Sync.ToString();
-        }
+        public override string ToString() => Sync.ToString();
 
-        private void NotifyPropertyChanged([CallerMemberName] string propertyName = null)
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
