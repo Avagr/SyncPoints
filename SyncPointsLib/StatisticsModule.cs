@@ -13,8 +13,10 @@ namespace SyncPointsLib
     /// </summary>
     public class StatisticsModule : INotifyPropertyChanged
     {
-        private int dotCount;
-        private int curDotCount;
+        private int blueDotCount;
+        private int curBlueDotCount;
+        private int greenDotCount;
+        private int curGreenDotCount;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -24,14 +26,29 @@ namespace SyncPointsLib
         }
 
         /// <summary>
-        /// Number of dots generated
+        /// Number of blue dots generated
         /// </summary>
-        public int DotCount { get => dotCount; set { dotCount = value; OnPropertyChanged("DotCount"); } }
+        public int BlueDotCount { get => blueDotCount; set { blueDotCount = value; OnPropertyChanged("BlueDotCount"); } }
 
         /// <summary>
-        /// Number of dots onscreen at the time
+        /// Number of blue dots on screen at the time
         /// </summary>
-        public int CurrentDotCount { get => curDotCount; set { curDotCount = value; OnPropertyChanged("CurrentDotCount"); } }
+        public int CurrentBlueDotCount { get => curBlueDotCount; set { curBlueDotCount = value; OnPropertyChanged("CurrentBlueDotCount"); } }
+
+        /// <summary>
+        /// Number of green dots generated
+        /// </summary>
+        public int GreenDotCount { get => greenDotCount; set { greenDotCount = value; OnPropertyChanged("GreenDotCount"); } }
+
+        /// <summary>
+        /// Number of green dots on screen at the time
+        /// </summary>
+        public int CurrentGreenDotCount { get => curGreenDotCount; set { curGreenDotCount = value; OnPropertyChanged("CurrentGreenDotCount"); } }
+
+        /// <summary>
+        /// Amount of meetings of point of different colors
+        /// </summary>
+        public int ColorMeetings { get => colorMeetings; set { colorMeetings = value; OnPropertyChanged("ColorMeetings"); } }
 
         public double DistanceTravelled { get => distanceTravelled; set { distanceTravelled = value; OnPropertyChanged("DistanceTravelled"); } }
 
@@ -51,14 +68,18 @@ namespace SyncPointsLib
 
         public List<SyncVertex> DeadEndVertices { get; set; }
         private double distanceTravelled;
+        private int colorMeetings;
 
         public StatisticsModule(BidirectionalGraph<SyncVertex, WeightedEdge> graph)
         {
             PausedTime = new TimeSpan(0);
             StartTime = DateTime.Now;
-            DotCount = 0;
+            BlueDotCount = 0;
+            GreenDotCount = 0;
             DistanceTravelled = 0;
-            CurrentDotCount = 0;
+            CurrentBlueDotCount = 0;
+            CurrentGreenDotCount = 0;
+            ColorMeetings = 0;
             VertexStatistics = new Dictionary<SyncVertex, VertexData>();
             foreach (var vert in graph.Vertices)
             {
@@ -71,7 +92,7 @@ namespace SyncPointsLib
         {
             foreach (var vert in VertexStatistics.Keys)
             {
-                if (vert.Sync != vert.InitSync) DeadEndVertices.Add(vert);
+                if (vert.BlueSync != vert.InitSync || vert.GreenSync != vert.InitSync) DeadEndVertices.Add(vert);
             }
         }
     }

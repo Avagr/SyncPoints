@@ -15,17 +15,32 @@ namespace SyncPointsLib
     {
 
         /// <summary>
-        /// Sync counter
+        /// Blue sync counter
         /// </summary>
         [JsonIgnore]
-        public int Sync
+        public int BlueSync
         {
-            get => Background == Brushes.Transparent ? 0 : sync;
+            get => Background == Brushes.Transparent ? 0 : blueSync;
             set
             {
-                sync = value;
-                if (sync < 0) Background = Brushes.Purple;
-                OnPropertyChanged("Sync");
+                blueSync = value;
+                if (blueSync < 0) Background = Brushes.Purple;
+                OnPropertyChanged("BlueSync");
+            }
+        }
+
+        /// <summary>
+        /// Green sync counter
+        /// </summary>
+        [JsonIgnore]
+        public int GreenSync
+        {
+            get => Background == Brushes.Transparent ? 0 : greenSync;
+            set
+            {
+                greenSync = value;
+                if (greenSync < 0) Background = Brushes.Purple;
+                OnPropertyChanged("GreenSync");
             }
         }
 
@@ -33,15 +48,16 @@ namespace SyncPointsLib
         public Brush Background { get => background; set { background = value; OnPropertyChanged("Background"); } }
 
         [XmlAttribute("InitSync")]
-        public int InitSync { get => initSync; set { initSync = value; Sync = value; OnPropertyChanged("InitSync"); OnPropertyChanged("Sync"); } } // Synchronization to reset to 
-        private int sync;
+        public int InitSync { get => initSync; set { initSync = value; BlueSync = value; GreenSync = value;  OnPropertyChanged("InitSync"); OnPropertyChanged("BlueSync"); OnPropertyChanged("GreenSync"); } } // Synchronization to reset to 
+        private int blueSync;
+        private int greenSync;
         private Brush background;
         private int initSync;
 
         public SyncVertex()
         {
             Background = Brushes.OrangeRed;
-            sync = 0;
+            InitSync = 0;
         }
 
         public SyncVertex(int id, int sync)
@@ -49,7 +65,8 @@ namespace SyncPointsLib
             if (sync < 1) throw new ArgumentException("Sync counter cannot be less than 1");
             ID = id;
             InitSync = sync;
-            Sync = sync;
+            BlueSync = sync;
+            GreenSync = sync;
             Background = Brushes.OrangeRed;
         }
 
@@ -58,12 +75,18 @@ namespace SyncPointsLib
         /// <summary>
         /// Resets the synchronization counter
         /// </summary>
-        public void ResetSync()
+        public void ResetBlueSync()
         {
-            Sync = InitSync;
+            BlueSync = InitSync;
         }
 
-        public override string ToString() => Sync.ToString();
+        /// <summary>
+        /// Resets the synchronization counter
+        /// </summary>
+        public void ResetGreenSync()
+        {
+            GreenSync = InitSync;
+        }
 
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

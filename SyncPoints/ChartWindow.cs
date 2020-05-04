@@ -18,12 +18,14 @@ namespace SyncPoints
         public Func<double, string> TimeSpanFormatter { get; set; }
         public double AxisUnit { get; set; }
         public double AxisStep { get; set; }
-        List<PointValues> Values { get; set; }
+        List<PointValues> BlueValues { get; set; }
+        List<PointValues> GreenValues { get; set; }
         public double ChartWidth { get => chartWidth; set { chartWidth = value; OnPropertyChanged("ChartWidth"); } }
 
-        public ChartWindow(string chartName, List<PointValues> values)
+        public ChartWindow(string chartName, List<PointValues> bluevalues, List<PointValues> greenvalues)
         {
-            Values = values;
+            BlueValues = bluevalues;
+            GreenValues = greenvalues;
             InitializeComponent();
             chartTitle.Text = chartName;
             var mapper = Mappers.Xy<PointValues>()
@@ -31,11 +33,13 @@ namespace SyncPoints
             .Y(model => model.PointNumber);
             Charting.For<PointValues>(mapper);
             TimeSpanFormatter = value => new TimeSpan((long)value).Seconds.ToString();
-            line.Values = new ChartValues<PointValues>(values);
+            line.Values = new ChartValues<PointValues>(BlueValues);
+            line2.Values = new ChartValues<PointValues>(GreenValues);
             AxisUnit = TimeSpan.TicksPerSecond;
             AxisStep = TimeSpan.FromSeconds(1).Ticks;
             UpdateChartWidth();
             DataContext = this;
+
         }
 
         /// <summary>
@@ -43,12 +47,13 @@ namespace SyncPoints
         /// </summary>
         void UpdateChartWidth()
         {
-            ChartWidth = Math.Max(750, 25 * Values.Count);
+            ChartWidth = Math.Max(750, 25 * BlueValues.Count);
         }
 
-        private void refreshButton_Click(object sender, RoutedEventArgs e)
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            line.Values = new ChartValues<PointValues>(Values);
+            line.Values = new ChartValues<PointValues>(BlueValues);
+            line2.Values = new ChartValues<PointValues>(GreenValues);
             UpdateChartWidth();
         }
 

@@ -9,7 +9,6 @@ namespace SyncPointsLib
     {
         private int vertexCount;
         private double edgeProbability;
-        private double startingEdgeProbability;
         private int syncLowerBound;
         private int syncUpperBound;
         private double weightLowerBound;

@@ -10,7 +10,7 @@
         <TextBlock Name="chartTitle" HorizontalAlignment="Center" FontSize="30" FontWeight="DemiBold"
                    Foreground="RoyalBlue" />
         <Button x:Name="refreshButton" Margin="5,6" HorizontalAlignment="Right" VerticalAlignment="Center"
-                Background="RoyalBlue" Click="refreshButton_Click" Foreground="White">
+                Background="RoyalBlue" Click="RefreshButton_Click" Foreground="White">
             <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="DemiBold" Foreground="White">Refresh</TextBlock>
         </Button>
         <ScrollViewer x:Name="scrollView" Grid.Row="1" Margin="10" HorizontalAlignment="Left"
@@ -32,7 +32,9 @@
                     </Style>
                 </lvc:CartesianChart.Resources>
                 <lvc:CartesianChart.Series>
-                    <lvc:LineSeries Name="line" Fill="Transparent" LineSmoothness="1" Stroke="#F34336"
+                    <lvc:LineSeries Name="line" Fill="Transparent" LineSmoothness="1" Stroke="Blue"
+                                    StrokeThickness="4" />
+                    <lvc:LineSeries Name="line2" Fill="Transparent" LineSmoothness="1" Stroke="#228B22"
                                     StrokeThickness="4" />
                 </lvc:CartesianChart.Series>
                 <lvc:CartesianChart.AxisY>

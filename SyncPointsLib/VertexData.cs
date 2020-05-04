@@ -1,52 +1,55 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace SyncPointsLib
 {
     public class VertexData : INotifyPropertyChanged
     {
-        private int dotsOut;
-        private int dotsIn;
+        private int blueDotsOut;
+        private int blueDotsIn;
+        private int greenDotsOut;
+        private int greenDotsIn;
 
         /// <summary>
         /// Number of dots that went into a vertex
         /// </summary>
-        public int DotsOut { get => dotsOut; set { dotsOut = value; OnPropertyChanged("DotsOut"); } }
+        public int BlueDotsOut { get => blueDotsOut; set { blueDotsOut = value; OnPropertyChanged("BlueDotsOut"); } }
 
         /// <summary>
         /// Number of dots that went out of the vertex
         /// </summary>
-        public int DotsIn { get => dotsIn; set { dotsIn = value; OnPropertyChanged("DotsIn"); } }
+        public int BlueDotsIn { get => blueDotsIn; set { blueDotsIn = value; OnPropertyChanged("BlueDotsIn"); } }
 
         /// <summary>
-        /// All the sync values
+        /// Number of dots that went into a vertex
         /// </summary>
-        public List<int> SyncHistory { get; set; }
+        public int GreenDotsOut { get => greenDotsOut; set { greenDotsOut = value; OnPropertyChanged("GreenDotsOut"); } }
+
+        /// <summary>
+        /// Number of dots that went out of the vertex
+        /// </summary>
+        public int GreenDotsIn { get => greenDotsIn; set { greenDotsIn = value; OnPropertyChanged("GreenDotsIn"); } }
+
+        /// <summary>
+        /// All the blue sync values
+        /// </summary>
+        public List<int> BlueSyncHistory { get; set; }
+
+        /// <summary>
+        /// All the green sync values
+        /// </summary>
+        public List<int> GreenSyncHistory { get; set; }
 
         public VertexData() { }
 
         public VertexData(int initSync)
         {
-            SyncHistory = new List<int> { initSync };
-            DotsIn = 0;
-            DotsOut = 0;
-        }
-
-        /// <summary>
-        /// Adds a new sync value to the list that is decreased by one compared to the last one
-        /// </summary>
-        public void DecreaseSync()
-        {
-            SyncHistory.Add(SyncHistory.Last() - 1);
-        }
-
-        /// <summary>
-        /// Adds a new sync value to the list that is increased by one compared to the last one
-        /// </summary>
-        public void IncreaseSync()
-        {
-            SyncHistory.Add(SyncHistory.Last() + 1);
+            BlueSyncHistory = new List<int> { initSync };
+            GreenSyncHistory = new List<int> { initSync };
+            BlueDotsIn = 0;
+            BlueDotsOut = 0;
+            GreenDotsIn = 0;
+            GreenDotsOut = 0;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
