@@ -197,15 +197,15 @@ namespace SyncPoints
                     {
                         Stats.CurrentBlueDotCount--;
                         edge.Target.BlueSync--;
-                        Stats.VertexStatistics[edge.Target].BlueDotsIn++;
-                        Stats.VertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
+                        Stats.vertexStatistics[edge.Target].BlueDotsIn++;
+                        Stats.vertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
                     }
                     else
                     {
                         Stats.CurrentGreenDotCount--;
                         edge.Target.GreenSync--;
-                        Stats.VertexStatistics[edge.Target].GreenDotsIn++;
-                        Stats.VertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
+                        Stats.vertexStatistics[edge.Target].GreenDotsIn++;
+                        Stats.vertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
                     }
                     Stats.DistanceTravelled += edge.Weight;
                     ActiveStoryboards.Remove(animStoryboard);
@@ -231,8 +231,8 @@ namespace SyncPoints
                                 Storyboard story = InvisibleAnimateEdge(outEdge, isBlue);
                                 ActiveStoryboards.Add(story);
                                 if (isStopping) break;
-                                if (isBlue) Stats.VertexStatistics[outEdge.Source].BlueDotsOut++;
-                                else Stats.VertexStatistics[outEdge.Source].GreenDotsOut++;
+                                if (isBlue) Stats.vertexStatistics[outEdge.Source].BlueDotsOut++;
+                                else Stats.vertexStatistics[outEdge.Source].GreenDotsOut++;
                                 zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
                                 story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
                             }
@@ -243,12 +243,12 @@ namespace SyncPoints
                             if (isBlue)
                             {
                                 edge.Target.ResetBlueSync();
-                                Stats.VertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
+                                Stats.vertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
                             }
                             else
                             {
                                 edge.Target.ResetGreenSync();
-                                Stats.VertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
+                                Stats.vertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
                             }
                         }
                     }
@@ -329,15 +329,15 @@ namespace SyncPoints
                     {
                         Stats.CurrentBlueDotCount--;
                         edge.Target.BlueSync--;
-                        Stats.VertexStatistics[edge.Target].BlueDotsIn++;
-                        Stats.VertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
+                        Stats.vertexStatistics[edge.Target].BlueDotsIn++;
+                        Stats.vertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
                     }
                     else
                     {
                         Stats.CurrentGreenDotCount--;
                         edge.Target.GreenSync--;
-                        Stats.VertexStatistics[edge.Target].GreenDotsIn++;
-                        Stats.VertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
+                        Stats.vertexStatistics[edge.Target].GreenDotsIn++;
+                        Stats.vertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
                     }
                     Stats.DistanceTravelled += edge.Weight;
                     ActiveStoryboards.Remove(animStoryboard);
@@ -362,7 +362,7 @@ namespace SyncPoints
                                     {
                                         if (edge.Target.BlueSync >= newSync) break;
                                         edge.Target.BlueSync++;
-                                    } 
+                                    }
                                     else
                                     {
                                         if (edge.Target.GreenSync >= newSync) break;
@@ -375,8 +375,8 @@ namespace SyncPoints
                                 ActiveStoryboards.Add(anim.Storyboard);
                                 if (isStopping) break;
                                 ActivePaths.Add(anim.Path);
-                                if (isBlue) Stats.VertexStatistics[outEdge.Source].BlueDotsOut++;
-                                else Stats.VertexStatistics[outEdge.Source].GreenDotsOut++;
+                                if (isBlue) Stats.vertexStatistics[outEdge.Source].BlueDotsOut++;
+                                else Stats.vertexStatistics[outEdge.Source].GreenDotsOut++;
                                 zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
                                 anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
                             }
@@ -387,12 +387,12 @@ namespace SyncPoints
                             if (isBlue)
                             {
                                 edge.Target.ResetBlueSync();
-                                Stats.VertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
+                                Stats.vertexStatistics[edge.Target].BlueSyncHistory.Add(edge.Target.BlueSync);
                             }
                             else
                             {
                                 edge.Target.ResetGreenSync();
-                                Stats.VertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
+                                Stats.vertexStatistics[edge.Target].GreenSyncHistory.Add(edge.Target.GreenSync);
                             }
                         }
                     }
@@ -512,46 +512,58 @@ namespace SyncPoints
             {
                 foreach (var edge in StartingEdgesBlue)
                 {
-                    startBlueEdgeCount++;
-                    Storyboard story = InvisibleAnimateEdge(edge, true);
-                    Stats.VertexStatistics[edge.Source].BlueDotsOut++;
-                    zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
-                    story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                    ActiveStoryboards.Add(story);
+                    for (int i = 0; i < edge.BlueDotsCount; i++)
+                    {
+                        startBlueEdgeCount++;
+                        Storyboard story = InvisibleAnimateEdge(edge, true);
+                        Stats.vertexStatistics[edge.Source].BlueDotsOut++;
+                        zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
+                        story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                        ActiveStoryboards.Add(story);
+                    }
                 }
                 foreach (var edge in StartingEdgesGreen)
                 {
-                    startGreenEdgeCount++;
-                    Storyboard story = InvisibleAnimateEdge(edge, false);
-                    Stats.VertexStatistics[edge.Source].GreenDotsOut++;
-                    zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
-                    story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                    ActiveStoryboards.Add(story);
+                    for (int i = 0; i < edge.GreenDotsCount; i++)
+                    {
+                        startGreenEdgeCount++;
+                        Storyboard story = InvisibleAnimateEdge(edge, false);
+                        Stats.vertexStatistics[edge.Source].GreenDotsOut++;
+                        zoomcontrol.BeginStoryboard(story, HandoffBehavior.SnapshotAndReplace, true);
+                        story.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                        ActiveStoryboards.Add(story);
+                    }
                 }
             }
             else
             {
                 foreach (var edge in StartingEdgesBlue)
                 {
-                    startBlueEdgeCount++;
-                    DotAnimation anim = AnimateEdge(edge, true);
-                    Stats.VertexStatistics[edge.Source].BlueDotsOut++;
-                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                    anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                    ActiveStoryboards.Add(anim.Storyboard);
-                    ActivePaths.Add(anim.Path);
+                    for (int i = 0; i < edge.BlueDotsCount; i++)
+                    {
+                        startBlueEdgeCount++;
+                        DotAnimation anim = AnimateEdge(edge, true);
+                        Stats.vertexStatistics[edge.Source].BlueDotsOut++;
+                        if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                        zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                        ActiveStoryboards.Add(anim.Storyboard);
+                        ActivePaths.Add(anim.Path);
+                    }
                 }
                 foreach (var edge in StartingEdgesGreen)
                 {
-                    startGreenEdgeCount++;
-                    DotAnimation anim = AnimateEdge(edge, false);
-                    Stats.VertexStatistics[edge.Source].GreenDotsOut++;
-                    if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
-                    zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
-                    anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
-                    ActiveStoryboards.Add(anim.Storyboard);
-                    ActivePaths.Add(anim.Path);
+                    for (int i = 0; i < edge.GreenDotsCount; i++)
+                    {
+                        startGreenEdgeCount++;
+                        DotAnimation anim = AnimateEdge(edge, false);
+                        Stats.vertexStatistics[edge.Source].GreenDotsOut++;
+                        if (!mainPanel.Children.Contains(anim.Path)) mainPanel.Children.Add(anim.Path);
+                        zoomcontrol.BeginStoryboard(anim.Storyboard, HandoffBehavior.SnapshotAndReplace, true);
+                        anim.Storyboard.SetSpeedRatio(zoomcontrol, Math.Exp(ExpConst * AnimationSpeed));
+                        ActiveStoryboards.Add(anim.Storyboard);
+                        ActivePaths.Add(anim.Path);
+                    }
                 }
             }
             StartChartReader();
@@ -763,7 +775,7 @@ namespace SyncPoints
                     }
                 }
             }
-            else throw new NotImplementedException("WHAT?");
+            else throw new NotImplementedException("Only triangles and squares are implemented");
             int vertindex = graph.VertexCount;
             int compNumber; // Number to compare the amount of edges to
             if (LatticeGenParams.CreateBorderCascade)
@@ -936,25 +948,34 @@ namespace SyncPoints
 
         public string StartingEdgeProbabilityString { get; set; }
 
-        public WeightedEdge SelectedEdge { get => selectedEdge; set { selectedEdge = value; OnPropertyChanged("SelectedEdge"); } } // Last clicked edge
+        public WeightedEdge SelectedEdge
+        {
+            get => selectedEdge; set
+            {
+                selectedEdge = value;
+                if (!StartingEdgesBlue.Contains(selectedEdge)) StartingEdgesBlue.Add(selectedEdge);
+                if (!StartingEdgesGreen.Contains(selectedEdge)) StartingEdgesGreen.Add(selectedEdge);
+                OnPropertyChanged("SelectedEdge");
+            }
+        } // Last clicked edge
 
         private void GenerateStartingEdges_Click(object sender, RoutedEventArgs e)
         {
             if (StartingEdgeProbabilityString != null && ValidateProbability(StartingEdgeProbabilityString, out double probability))
             {
+                if (SelectedEdge != null) graphArea.EdgesList[SelectedEdge].Foreground = Brushes.Black;
                 foreach (var edge in graph.Edges)
                 {
                     if (1 - rnd.NextDouble() <= probability)
-                        if (rnd.Next(2) == 0)
-                        {
-                            StartingEdgesBlue.Add(edge);
-                            edge.BlueDotsCount++;
-                        }
-                        else
-                        {
-                            StartingEdgesGreen.Add(edge);
-                            edge.GreenDotsCount++;
-                        }
+                    {
+                        StartingEdgesBlue.Add(edge);
+                        edge.BlueDotsCount++;
+                    }
+                    if (1 - rnd.NextDouble() <= probability)
+                    {
+                        StartingEdgesGreen.Add(edge);
+                        edge.GreenDotsCount++;
+                    }
                 }
                 startingEdgePanel.Visibility = Visibility.Collapsed;
                 graphStatPanel.Visibility = Visibility.Visible;
@@ -980,6 +1001,7 @@ namespace SyncPoints
             startingEdgePanel.Visibility = Visibility.Collapsed;
             graphStatPanel.Visibility = Visibility.Visible;
             Stats = new StatisticsModule(graph);
+            if (SelectedEdge != null) graphArea.EdgesList[SelectedEdge].Foreground = Brushes.Black;
             InitializeChart();
             mainPanel.IsHitTestVisible = false;
             WrongSEParams.Text = "";
@@ -1082,7 +1104,7 @@ namespace SyncPoints
 
         private void ViewVertexStats_Click(object sender, RoutedEventArgs e)
         {
-            var statsWindow = new VertexStatsWindow(Stats.VertexStatistics);
+            var statsWindow = new VertexStatsWindow(Stats.vertexStatistics);
             statsWindow.Show();
         }
 
@@ -1164,6 +1186,7 @@ namespace SyncPoints
                         vert.ResetGreenSync();
                     }
                     InitializeGraphArea();
+                    mainPanel.IsHitTestVisible = true;
                 }
                 catch (Exception ex)
                 {
@@ -1198,6 +1221,8 @@ namespace SyncPoints
 
         private void InfoButton_Click(object sender, RoutedEventArgs e)
         {
+            var infoWindow = new InfoWindow();
+            infoWindow.Show();
         }
 
         #endregion

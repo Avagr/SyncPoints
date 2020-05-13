@@ -13,6 +13,10 @@ namespace SyncPointsLib
     /// </summary>
     public class SyncVertex : VertexBase, INotifyPropertyChanged
     {
+        private int blueSync;
+        private int greenSync;
+        private Brush background;
+        private int initSync;
 
         /// <summary>
         /// Blue sync counter
@@ -49,10 +53,7 @@ namespace SyncPointsLib
 
         [XmlAttribute("InitSync")]
         public int InitSync { get => initSync; set { initSync = value; BlueSync = value; GreenSync = value;  OnPropertyChanged("InitSync"); OnPropertyChanged("BlueSync"); OnPropertyChanged("GreenSync"); } } // Synchronization to reset to 
-        private int blueSync;
-        private int greenSync;
-        private Brush background;
-        private int initSync;
+       
 
         public SyncVertex()
         {

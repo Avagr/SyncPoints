@@ -1,9 +1,9 @@
 ﻿<Window x:Class="SyncPoints.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls" xmlns:local="clr-namespace:SyncPoints" xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib" xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:ui="http://schemas.modernwpf.com/2019" Name="thisWindow" Title="SyncPoints"
-        Width="1200" Height="700" MinWidth="1010" MinHeight="700"
-        ui:ThemeManager.RequestedTheme="Light" ui:TitleBar.Background="RoyalBlue" ui:TitleBar.Foreground="White" ui:TitleBar.IsBackEnabled="True"
-        ui:WindowHelper.UseModernWindowStyle="True" WindowStartupLocation="CenterScreen" mc:Ignorable="d">
+        xmlns:graphxctrl="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls" xmlns:locallib="clr-namespace:SyncPointsLib;assembly=SyncPointsLib" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:ui="http://schemas.modernwpf.com/2019"
+        Name="thisWindow" Title="SyncPoints" Width="1280" Height="720"
+        MinWidth="1010" MinHeight="700" ui:ThemeManager.RequestedTheme="Light" ui:TitleBar.Background="RoyalBlue"
+        ui:TitleBar.Foreground="White" ui:TitleBar.IsBackEnabled="True" ui:WindowHelper.UseModernWindowStyle="True" WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="zoomSlider" TargetType="graphxctrl:ZoomControl">
             <Style.Resources>
@@ -321,7 +321,7 @@
             </TextBlock>
             <TextBlock HorizontalAlignment="Left" VerticalAlignment="Top" FontFamily="Yu Gothic UI" FontSize="12"
                        FontStyle="Italic" Foreground="DarkGray" TextWrapping="Wrap">
-                The probability that an edge will contain a point at the beginning. Can be set as a decimal and as a fraction. Blue and green dots will be chosen with equal probability.
+                The probability that an edge will contain a point at the beginning. Can be set as a decimal and as a fraction. Blue and green dots will be generated with equal probability.
             </TextBlock>
             <TextBox Height="30" Margin="0,0,0,0" VerticalAlignment="Center" BorderBrush="RoyalBlue"
                      MaxLength="5"
@@ -554,13 +554,13 @@
                        FontWeight="DemiBold" Foreground="RoyalBlue" TextWrapping="Wrap">
                 Parameters:
             </TextBlock>
-            <ComboBox Grid.Row="1" HorizontalAlignment="Center" FontFamily="Yu Gothic UI" FontSize="15"
-                      FontWeight="DemiBold" Foreground="RoyalBlue" Width="250"
+            <ComboBox Grid.Row="1" Width="250" HorizontalAlignment="Center" FontFamily="Yu Gothic UI"
+                      FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
                       IsEnabled="{Binding AnimNotStarted}"
                       SelectedIndex="{Binding UseSandpileModel, Mode=TwoWay}">
                 <ComboBoxItem>
                     <TextBlock FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
-                               Text="Use standart synchronization" TextWrapping="Wrap" />
+                               Text="Use standard synchronization" TextWrapping="Wrap" />
                 </ComboBoxItem>
                 <ComboBoxItem>
                     <TextBlock FontFamily="Yu Gothic UI" FontSize="15" FontWeight="DemiBold" Foreground="RoyalBlue"
@@ -759,6 +759,5 @@
                            Text="Generate a lattice graph" TextWrapping="Wrap" />
             </ComboBoxItem>
         </ComboBox>
-        <!--<Button x:Name="TestDot" Click="TestDot_Click" Visibility="Collapsed" />-->
     </Grid>
 </Window>

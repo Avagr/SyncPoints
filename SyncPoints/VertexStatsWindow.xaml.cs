@@ -19,6 +19,5 @@ namespace SyncPoints
             InitializeComponent();
             DataContext = this;
         }
-
     }
 }

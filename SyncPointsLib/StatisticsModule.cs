@@ -59,12 +59,12 @@ namespace SyncPointsLib
 
         public TimeSpan TimeElapsed { get => DateTime.Now - StartTime - PausedTime; }
 
-        public List<KeyValuePair<SyncVertex, VertexData>> VertexStatList { get => VertexStatistics.ToList(); }
+        public List<KeyValuePair<SyncVertex, VertexData>> VertexStatList { get => vertexStatistics.ToList(); }
 
         /// <summary>
         /// Records how many dots have come in and out of each vertex
         /// </summary>
-        public Dictionary<SyncVertex, VertexData> VertexStatistics;
+        public Dictionary<SyncVertex, VertexData> vertexStatistics;
 
         public List<SyncVertex> DeadEndVertices { get; set; }
         private double distanceTravelled;
@@ -80,17 +80,17 @@ namespace SyncPointsLib
             CurrentBlueDotCount = 0;
             CurrentGreenDotCount = 0;
             ColorMeetings = 0;
-            VertexStatistics = new Dictionary<SyncVertex, VertexData>();
+            vertexStatistics = new Dictionary<SyncVertex, VertexData>();
             foreach (var vert in graph.Vertices)
             {
-                if (vert.Background != Brushes.Transparent) VertexStatistics.Add(vert, new VertexData(vert.InitSync));
+                if (vert.Background != Brushes.Transparent) vertexStatistics.Add(vert, new VertexData(vert.InitSync));
             }
             DeadEndVertices = new List<SyncVertex>();
         }
 
         public void FindDeadEnds()
         {
-            foreach (var vert in VertexStatistics.Keys)
+            foreach (var vert in vertexStatistics.Keys)
             {
                 if (vert.BlueSync != vert.InitSync || vert.GreenSync != vert.InitSync) DeadEndVertices.Add(vert);
             }
