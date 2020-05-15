@@ -1,5 +1,5 @@
 ﻿<Window x:Class="SyncPoints.InfoWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:SyncPoints" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:ui="http://schemas.modernwpf.com/2019" Title="InfoWindow"
+        xmlns:local="clr-namespace:SyncPoints" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:ui="http://schemas.modernwpf.com/2019" Title="App information"
         Width="800" Height="450" ui:ThemeManager.RequestedTheme="Light" ui:WindowHelper.UseModernWindowStyle="True"
         mc:Ignorable="d">
     <Grid>
@@ -11,6 +11,8 @@
                    Text="Application Info" />
         <ScrollViewer Grid.Row="1" Margin="15" BorderBrush="RoyalBlue" BorderThickness="2">
             <TextBlock Margin="5" FontSize="18" TextWrapping="Wrap">
+                <Run FontSize="20" FontWeight="DemiBold" Text="Author: Alexander Agroskin, email: avagroskin@edu.hse.ru" />
+                <LineBreak />
                 <Run FontSize="20" FontWeight="DemiBold" Text="Welcome to SyncPoints!" />
                 <LineBreak />
                 <Run Text="Here is a short guide on using this application:" />
@@ -41,13 +43,13 @@
                 <LineBreak />
                 <Run Text="     The sandpile model is based on the Bak-Tang-Wiesenfeld model. When the sync number reaches zero, a point from the sandpile will exit for each out edge of the vertex. For each exiting point the sync number is increased by one, thus maintaining the number of points in the system. The ricepile model behaves like the sandpile model, but with one key difference: after a toppling has occured, the maximum synchronization number is randomized to be within 3 of the previous maximum, thus making the system stochastic." />
                 <LineBreak />
-                <Run Text="     During the simulation you can pause, resume and change the animation speed."/>
-                <LineBreak/>
+                <Run Text="     During the simulation you can pause, resume and change the animation speed." />
+                <LineBreak />
                 <Run FontSize="20" FontWeight="DemiBold" Text="4.   Collecting data" />
-                <LineBreak/>
-                <Run Text="     During the simulation there is a lot of data on display. The program displays the total number of points created for each color, number of points currently on screen, total distance travelled by all points, number of meetings between points of different types. By clicking the Show Vertex Data button you can see the full data of every vertex. "/>
-                <LineBreak/>
-                <Run Text="     If you want to analyze the data in a different program you can export everything to a JSON file. Additipnally, the exported file will contain a synchronization history for each vertex that is not shown in the interface."/>
+                <LineBreak />
+                <Run Text="     During the simulation there is a lot of data on display. The program displays the total number of points created for each color, number of points currently on screen, total distance travelled by all points, number of meetings between points of different types. By clicking the Show Vertex Data button you can see the full data of every vertex. " />
+                <LineBreak />
+                <Run Text="     If you want to analyze the data in a different program you can export everything to a JSON file. Additipnally, the exported file will contain a synchronization history for each vertex that is not shown in the interface." />
             </TextBlock>
         </ScrollViewer>
     </Grid>

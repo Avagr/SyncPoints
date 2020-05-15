@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using ModernWpf;
 using ModernWpf.Controls;
 using QuickGraph;
+using QuickGraph.Collections;
 using QuickGraph.Serialization;
 using SyncPointsLib;
 using System;
@@ -587,7 +588,7 @@ namespace SyncPoints
         /// </summary>
         private void CheckDotCount(object obj, EventArgs args)
         {
-            if ((Stats.CurrentBlueDotCount + Stats.CurrentGreenDotCount > 2000 && !DisableDots) || Stats.CurrentBlueDotCount + Stats.CurrentGreenDotCount > 4000)
+            if ((Stats.CurrentBlueDotCount + Stats.CurrentGreenDotCount > 3000 && !DisableDots) || Stats.CurrentBlueDotCount + Stats.CurrentGreenDotCount > 5000)
             {
                 animationStarted = !animationStarted;
                 OnPropertyChanged("AnimNotStarted"); // Disabling textboxes
@@ -961,7 +962,7 @@ namespace SyncPoints
 
         private void GenerateStartingEdges_Click(object sender, RoutedEventArgs e)
         {
-            if (StartingEdgeProbabilityString != null && ValidateProbability(StartingEdgeProbabilityString, out double probability))
+            if (StartingEdgeProbabilityString != null &&  ValidateProbability(StartingEdgeProbabilityString, out double probability))
             {
                 if (SelectedEdge != null) graphArea.EdgesList[SelectedEdge].Foreground = Brushes.Black;
                 foreach (var edge in graph.Edges)
@@ -1159,6 +1160,9 @@ namespace SyncPoints
             GraphGenParams = new GraphGenerationParams();
             LatticeGenParams = new LatticeGenParams();
             GraphManParams = new GraphManualParams();
+            StartingEdgeProbabilityString = null;
+            WrongParams.Text = "";
+            WrongSEParams.Text = "";
             mainPanel.IsHitTestVisible = true;
         }
 
