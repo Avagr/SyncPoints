@@ -210,7 +210,7 @@ namespace SyncPoints
                     }
                     Stats.DistanceTravelled += edge.Weight;
                     ActiveStoryboards.Remove(animStoryboard);
-                    if (ActiveStoryboards.Count == 0)
+                    if (ActiveStoryboards.Count == 0 && !((edge.Target.BlueSync < 1 || edge.Target.GreenSync < 1) && !graph.IsOutEdgesEmpty(edge.Target)))
                     {
                         StopAnimation();
                         HighlightDeadEnds();
@@ -342,7 +342,7 @@ namespace SyncPoints
                     }
                     Stats.DistanceTravelled += edge.Weight;
                     ActiveStoryboards.Remove(animStoryboard);
-                    if (ActiveStoryboards.Count == 0)
+                    if (ActiveStoryboards.Count == 0 && !((edge.Target.BlueSync < 1 || edge.Target.GreenSync < 1) && !graph.IsOutEdgesEmpty(edge.Target)))
                     {
                         StopAnimation();
                         HighlightDeadEnds();
@@ -1079,6 +1079,8 @@ namespace SyncPoints
                     {
                         edge.BlueDotsCount = edgeList[(int)edge.ID - 1].BlueDotsCount;
                         edge.GreenDotsCount = edgeList[(int)edge.ID - 1].GreenDotsCount;
+                        if (!StartingEdgesBlue.Contains(edge)) StartingEdgesBlue.Add(edge);
+                        if (!StartingEdgesGreen.Contains(edge)) StartingEdgesGreen.Add(edge);
                     }
                 }
                 catch (Exception ex)
