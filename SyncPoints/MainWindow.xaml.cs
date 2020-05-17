@@ -220,13 +220,31 @@ namespace SyncPoints
                     {
                         if (!isPaused)
                         {
+                            int newSync;
+                            if (UseSandpileModel == 2)
+                            {
+                                newSync = rnd.Next(Math.Max(1, edge.Target.InitSync - 3), edge.Target.InitSync + 2);
+                                if (edge.Target.InitSync < newSync)
+                                {
+                                    edge.Target.BlueSync += newSync - edge.Target.InitSync;
+                                    edge.Target.GreenSync += newSync - edge.Target.InitSync;
+                                }
+                            }
+                            else newSync = edge.Target.InitSync;
                             foreach (var outEdge in graph.OutEdges(edge.Target))
                             {
-                                if (UseSandpileModel == 1)
+                                if (UseSandpileModel > 0)
                                 {
-                                    //edge.Target.Sync++;
-                                    //Stats.VertexStatistics[edge.Target].IncreaseSync();
-                                    //if (edge.Target.Sync >= edge.Target.InitSync) break;
+                                    if (isBlue)
+                                    {
+                                        if (edge.Target.BlueSync >= newSync) break;
+                                        edge.Target.BlueSync++;
+                                    }
+                                    else
+                                    {
+                                        if (edge.Target.GreenSync >= newSync) break;
+                                        edge.Target.GreenSync++;
+                                    }
                                 }
                                 if (isStopping) break;
                                 Storyboard story = InvisibleAnimateEdge(outEdge, isBlue);
@@ -353,7 +371,15 @@ namespace SyncPoints
                         if (!isPaused)
                         {
                             int newSync;
-                            if (UseSandpileModel == 2) newSync = rnd.Next(Math.Max(1, edge.Target.InitSync - 3), edge.Target.InitSync + 2);
+                            if (UseSandpileModel == 2)
+                            {
+                                newSync = rnd.Next(Math.Max(1, edge.Target.InitSync - 3), edge.Target.InitSync + 2);
+                                if (edge.Target.InitSync < newSync)
+                                {
+                                    edge.Target.BlueSync += newSync - edge.Target.InitSync;
+                                    edge.Target.GreenSync += newSync - edge.Target.InitSync;
+                                }
+                            }
                             else newSync = edge.Target.InitSync;
                             foreach (var outEdge in graph.OutEdges(edge.Target))
                             {
@@ -962,7 +988,7 @@ namespace SyncPoints
 
         private void GenerateStartingEdges_Click(object sender, RoutedEventArgs e)
         {
-            if (StartingEdgeProbabilityString != null &&  ValidateProbability(StartingEdgeProbabilityString, out double probability))
+            if (StartingEdgeProbabilityString != null && ValidateProbability(StartingEdgeProbabilityString, out double probability))
             {
                 if (SelectedEdge != null) graphArea.EdgesList[SelectedEdge].Foreground = Brushes.Black;
                 foreach (var edge in graph.Edges)
@@ -985,6 +1011,7 @@ namespace SyncPoints
                 mainPanel.IsHitTestVisible = false;
                 WrongSEParams.Text = "";
                 titleText.Text = "";
+                StartingEdgeProbabilityString = "";
                 UseSandpileModel = 0;
             }
             else WrongSEParams.Text = "Invalid probability format";
